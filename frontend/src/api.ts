@@ -25,7 +25,8 @@ export async function createRun(workflow: string, inputs: Record<string, unknown
 }
 
 export function connectRunWebSocket(runId: string, onMessage: (msg: unknown) => void): WebSocket {
-  const wsBase = API_URL.replace(/^http/, 'ws') || `ws://${window.location.host}`;
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsBase = API_URL.replace(/^http(s?):/, `ws$1:`) || `${protocol}//${window.location.host}`;
   const ws = new WebSocket(`${wsBase}/ws/${runId}`);
   ws.onmessage = (e) => onMessage(JSON.parse(e.data));
   return ws;

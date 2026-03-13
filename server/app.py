@@ -1,12 +1,18 @@
-"""Agentic SDLC Demo — API server."""
+"""Agentic SDLC Demo — API server.
+
+Single dyno serves both the API and the frontend static build.
+In dev mode, the Vite dev server proxies /api and /ws to this server.
+"""
 
 from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from server.database import init_db
 from server.routes import router
@@ -32,3 +38,9 @@ app.add_middleware(
 
 app.include_router(router, prefix="/api")
 app.include_router(ws_router)
+
+# Serve frontend static build if it exists (production).
+# Mount AFTER API routes so /api and /ws take priority.
+static_dir = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if static_dir.is_dir():
+    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="frontend")

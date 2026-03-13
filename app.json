@@ -1,0 +1,21 @@
+{
+  "name": "Agentic SDLC Demo",
+  "description": "Multi-agent staged pipeline for automated software development",
+  "repository": "https://github.com/shine2lay/agentic-sdlc-demo",
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0"
+    }
+  ],
+  "env": {
+    "CORS_ORIGINS": {
+      "description": "Comma-separated allowed origins for CORS",
+      "value": "*"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}

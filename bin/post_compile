@@ -1,0 +1,12 @@
+#!/bin/bash
+# Heroku post-compile hook: build the frontend after Python deps are installed
+set -e
+
+if [ -d "frontend" ]; then
+    echo "-----> Building frontend"
+    cd frontend
+    npm install
+    npm run build
+    cd ..
+    echo "-----> Frontend build complete"
+fi
