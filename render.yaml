@@ -12,22 +12,6 @@ services:
       - key: CORS_ORIGINS
         value: https://agentic-sdlc-demo.onrender.com
 
-  - type: static
-    name: agentic-sdlc-demo
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=0, must-revalidate
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://agentic-sdlc-api.onrender.com
-
 databases:
   - name: agentic-sdlc-db
     plan: free
