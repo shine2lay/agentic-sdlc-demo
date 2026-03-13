@@ -1,0 +1,45 @@
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+export async function fetchHealth(): Promise<{ status: string }> {
+  const res = await fetch(`${API_URL}/api/health`);
+  return res.json();
+}
+
+export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
+  const res = await fetch(`${API_URL}/api/runs`);
+  return res.json();
+}
+
+export async function fetchRun(id: string): Promise<Run> {
+  const res = await fetch(`${API_URL}/api/runs/${id}`);
+  return res.json();
+}
+
+export async function createRun(workflow: string, inputs: Record<string, unknown> = {}): Promise<{ id: string; status: string }> {
+  const res = await fetch(`${API_URL}/api/runs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workflow, inputs }),
+  });
+  return res.json();
+}
+
+export function connectRunWebSocket(runId: string, onMessage: (msg: unknown) => void): WebSocket {
+  const wsBase = API_URL.replace(/^http/, 'ws') || `ws://${window.location.host}`;
+  const ws = new WebSocket(`${wsBase}/ws/${runId}`);
+  ws.onmessage = (e) => onMessage(JSON.parse(e.data));
+  return ws;
+}
+
+export interface Run {
+  id: string;
+  workflow: string;
+  status: string;
+  inputs?: Record<string, unknown>;
+  result?: Record<string, unknown> | null;
+  error?: string | null;
+  worker_id?: string | null;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+}

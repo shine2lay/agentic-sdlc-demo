@@ -1,0 +1,105 @@
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.status-dot.ok { background: var(--green); }
+.status-dot.error { background: var(--red); }
+.status-dot.pending { background: var(--yellow); }
+.status-dot.loading { background: var(--text-muted); }
+
+.health-badge {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.runs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.run-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.run-card:hover {
+  border-color: var(--accent);
+}
+
+.run-card .run-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.run-card .run-workflow {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.run-card .run-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.run-card .run-status {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+.run-status.pending { background: #422006; color: var(--yellow); }
+.run-status.claimed { background: #172554; color: var(--accent); }
+.run-status.running { background: #172554; color: var(--accent); }
+.run-status.completed { background: #052e16; color: var(--green); }
+.run-status.failed { background: #450a0a; color: var(--red); }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
