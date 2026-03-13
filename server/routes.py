@@ -37,6 +37,11 @@ def version():
     return {"version": "0.3.0", "deployed_by": "agentic-sdlc"}
 
 
+@router.get("/ping")
+def ping():
+    return {"pong": True, "timestamp": datetime.now(UTC).isoformat()}
+
+
 @router.get("/stats")
 def stats(session: Session = Depends(get_session)):
     total_runs = session.exec(select(Run)).all()
