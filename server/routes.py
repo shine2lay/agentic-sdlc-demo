@@ -32,6 +32,11 @@ def health():
     return {"status": "ok"}
 
 
+@router.get("/api/version")
+def version():
+    return {"version": "0.2.0", "deployed_by": "agentic-sdlc"}
+
+
 @router.post("/runs", response_model=CreateRunResponse)
 def create_run(body: CreateRunRequest, session: Session = Depends(get_session)):
     run = Run(
