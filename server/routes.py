@@ -37,6 +37,12 @@ def version():
     return {"version": "0.3.0", "deployed_by": "agentic-sdlc"}
 
 
+@router.get("/stats")
+def stats(session: Session = Depends(get_session)):
+    total_runs = session.exec(select(Run)).all()
+    return {"total_runs": len(total_runs), "status": "healthy"}
+
+
 @router.post("/runs", response_model=CreateRunResponse)
 def create_run(body: CreateRunRequest, session: Session = Depends(get_session)):
     run = Run(
