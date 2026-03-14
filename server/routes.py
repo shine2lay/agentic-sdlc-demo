@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -15,6 +16,8 @@ from server.database import get_session
 from server.models import Run, RunEvent
 
 router = APIRouter()
+
+START_TIME = time.time()
 
 
 class CreateRunRequest(BaseModel):
@@ -46,6 +49,12 @@ def ping():
 def stats(session: Session = Depends(get_session)):
     total_runs = session.exec(select(Run)).all()
     return {"total_runs": len(total_runs), "status": "healthy"}
+
+
+@router.get("/status")
+def status():
+    uptime = int(time.time() - START_TIME)
+    return {"status": "operational", "uptime_seconds": uptime}
 
 
 @router.post("/runs", response_model=CreateRunResponse)
