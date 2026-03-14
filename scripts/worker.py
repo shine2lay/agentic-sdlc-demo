@@ -133,6 +133,17 @@ def poll_pipeline(client: httpx.Client, execution_id: str) -> dict:
         time.sleep(15)
 
 
+def fetch_execution_snapshot(client: httpx.Client, execution_id: str) -> dict | None:
+    """Fetch full execution details (stages, agents, calls) from temper-ai."""
+    try:
+        resp = client.get(f"{TEMPER_API_URL}/api/workflows/{execution_id}")
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception as e:
+        log(f"  Warning: failed to fetch execution snapshot: {e}")
+    return None
+
+
 def process_run(run_id: str, workflow: str, inputs: dict) -> None:
     task = inputs.get("task_description", "")
     if not task:
@@ -156,14 +167,21 @@ def process_run(run_id: str, workflow: str, inputs: dict) -> None:
             status = result.get("status", "unknown")
             log(f"  Pipeline finished: {status}")
 
+            # Fetch full execution snapshot for the frontend
+            snapshot = fetch_execution_snapshot(client, execution_id)
+
+            run_result: dict = {
+                "execution_id": execution_id,
+                "pipeline_result": result.get("result"),
+            }
+            if snapshot:
+                run_result["execution"] = snapshot
+
             if status == "completed":
-                update_run(run_id, "completed", result={
-                    "execution_id": execution_id,
-                    "pipeline_result": result.get("result"),
-                })
+                update_run(run_id, "completed", result=run_result)
             else:
                 update_run(run_id, "failed",
-                    result={"execution_id": execution_id},
+                    result=run_result,
                     error=result.get("error_message", "Pipeline failed"),
                 )
     except Exception as e:

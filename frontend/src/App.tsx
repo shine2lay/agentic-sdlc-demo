@@ -3,10 +3,10 @@ import { fetchHealth, fetchRuns, submitSuggestion, type Run } from './api';
 import ExecutionView from './ExecutionView';
 import './App.css';
 
-function getExecutionId(run: Run): string | null {
-  if (!run.result) return null;
+function hasExecution(run: Run): boolean {
+  if (!run.result) return false;
   const r = run.result as Record<string, unknown>;
-  return (r.execution_id as string) || null;
+  return !!(r.execution_id || r.execution);
 }
 
 function App() {
@@ -15,7 +15,7 @@ function App() {
   const [suggestion, setSuggestion] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
-  const [selectedExecId, setSelectedExecId] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHealth()
@@ -52,12 +52,12 @@ function App() {
     }
   };
 
-  if (selectedExecId) {
+  if (selectedRunId) {
     return (
       <div className="app">
         <ExecutionView
-          executionId={selectedExecId}
-          onClose={() => setSelectedExecId(null)}
+          runId={selectedRunId}
+          onClose={() => setSelectedRunId(null)}
         />
       </div>
     );
@@ -108,12 +108,12 @@ function App() {
       ) : (
         <div className="runs-list">
           {runs.map((run) => {
-            const execId = getExecutionId(run);
+            const clickable = hasExecution(run);
             return (
               <div
                 key={run.id}
-                className={`run-card ${execId ? 'clickable' : ''}`}
-                onClick={() => execId && setSelectedExecId(execId)}
+                className={`run-card ${clickable ? 'clickable' : ''}`}
+                onClick={() => clickable && setSelectedRunId(run.id)}
               >
                 <div className="run-info">
                   <span className="run-workflow">{run.workflow}</span>
@@ -124,7 +124,7 @@ function App() {
                 </div>
                 <div className="run-right">
                   <span className={`run-status ${run.status}`}>{run.status}</span>
-                  {execId && <span className="run-arrow">&rsaquo;</span>}
+                  {clickable && <span className="run-arrow">&rsaquo;</span>}
                 </div>
               </div>
             );

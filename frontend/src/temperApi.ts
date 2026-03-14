@@ -1,4 +1,4 @@
-const TEMPER_API_URL = import.meta.env.VITE_TEMPER_API_URL || 'http://localhost:8421';
+import { fetchRun } from './api';
 
 export interface LLMCall {
   id: string;
@@ -66,8 +66,12 @@ export interface WorkflowExecution {
   stages: StageExecution[];
 }
 
-export async function fetchExecution(executionId: string): Promise<WorkflowExecution> {
-  const res = await fetch(`${TEMPER_API_URL}/api/workflows/${executionId}`);
-  if (!res.ok) throw new Error(`Failed to fetch execution: ${res.status}`);
-  return res.json();
+export async function fetchExecution(runId: string): Promise<WorkflowExecution> {
+  // Execution data is embedded in the run's result.execution field
+  const run = await fetchRun(runId);
+  const result = run.result as Record<string, unknown> | null;
+  if (!result?.execution) {
+    throw new Error('Execution details not available yet');
+  }
+  return result.execution as WorkflowExecution;
 }

@@ -111,33 +111,19 @@ function StageRow({ stage, index }: { stage: StageExecution; index: number }) {
   );
 }
 
-export default function ExecutionView({ executionId, onClose }: { executionId: string; onClose: () => void }) {
+export default function ExecutionView({ runId, onClose }: { runId: string; onClose: () => void }) {
   const [execution, setExecution] = useState<WorkflowExecution | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    let interval: ReturnType<typeof setInterval>;
 
-    const load = () => {
-      fetchExecution(executionId)
-        .then((data) => { if (active) setExecution(data); })
-        .catch((err) => { if (active) setError(err.message); });
-    };
+    fetchExecution(runId)
+      .then((data) => { if (active) setExecution(data); })
+      .catch((err) => { if (active) setError(err.message); });
 
-    load();
-    // Poll while running
-    interval = setInterval(load, 3000);
-
-    return () => { active = false; clearInterval(interval); };
-  }, [executionId]);
-
-  // Stop polling when terminal
-  useEffect(() => {
-    if (execution && ['completed', 'failed', 'halted', 'timeout'].includes(execution.status)) {
-      // one final fetch, then stop
-    }
-  }, [execution?.status]);
+    return () => { active = false; };
+  }, [runId]);
 
   if (error) {
     return (
@@ -161,8 +147,6 @@ export default function ExecutionView({ executionId, onClose }: { executionId: s
     );
   }
 
-  const isTerminal = ['completed', 'failed', 'halted', 'timeout'].includes(execution.status);
-
   return (
     <div className="execution-view">
       <div className="exec-header">
@@ -170,7 +154,6 @@ export default function ExecutionView({ executionId, onClose }: { executionId: s
         <div className="exec-title">
           <span className="exec-workflow-name">{execution.workflow_name}</span>
           <span className={`run-status ${execution.status}`}>{execution.status}</span>
-          {!isTerminal && <span className="exec-live-dot" />}
         </div>
       </div>
 
