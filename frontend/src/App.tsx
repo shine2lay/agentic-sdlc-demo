@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { fetchHealth, fetchRuns, submitSuggestion, type Run } from './api';
+import ExecutionView from './ExecutionView';
 import './App.css';
+
+function getExecutionId(run: Run): string | null {
+  if (!run.result) return null;
+  const r = run.result as Record<string, unknown>;
+  return (r.execution_id as string) || null;
+}
 
 function App() {
   const [health, setHealth] = useState<string>('loading');
@@ -8,6 +15,7 @@ function App() {
   const [suggestion, setSuggestion] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
+  const [selectedExecId, setSelectedExecId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHealth()
@@ -43,6 +51,17 @@ function App() {
       setTimeout(() => setSubmitState('idle'), 5000);
     }
   };
+
+  if (selectedExecId) {
+    return (
+      <div className="app">
+        <ExecutionView
+          executionId={selectedExecId}
+          onClose={() => setSelectedExecId(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -88,17 +107,28 @@ function App() {
         </div>
       ) : (
         <div className="runs-list">
-          {runs.map((run) => (
-            <div key={run.id} className="run-card">
-              <div className="run-info">
-                <span className="run-workflow">{run.workflow}</span>
-                <span className="run-meta">
-                  {run.id.slice(0, 8)} &middot; {new Date(run.created_at).toLocaleString()}
-                </span>
+          {runs.map((run) => {
+            const execId = getExecutionId(run);
+            return (
+              <div
+                key={run.id}
+                className={`run-card ${execId ? 'clickable' : ''}`}
+                onClick={() => execId && setSelectedExecId(execId)}
+              >
+                <div className="run-info">
+                  <span className="run-workflow">{run.workflow}</span>
+                  <span className="run-meta">
+                    {run.id.slice(0, 8)} &middot; {new Date(run.created_at).toLocaleString()}
+                  </span>
+                  {run.error && <span className="run-error-hint">{run.error.slice(0, 80)}</span>}
+                </div>
+                <div className="run-right">
+                  <span className={`run-status ${run.status}`}>{run.status}</span>
+                  {execId && <span className="run-arrow">&rsaquo;</span>}
+                </div>
               </div>
-              <span className={`run-status ${run.status}`}>{run.status}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

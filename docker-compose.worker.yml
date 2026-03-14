@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    network_mode: host
+    command: -p 5434
+    environment:
+      POSTGRES_DB: temper
+      POSTGRES_USER: temper
+      POSTGRES_PASSWORD: temper
+      PGPORT: "5434"
+    volumes:
+      - temper_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temper -p 5434"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  sdlc-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+      additional_contexts:
+        temper: ${TEMPER_AI_PATH:-../temper-ai}
+    network_mode: host
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TEMPER_PORT: "8421"
+      TEMPER_API_URL: http://localhost:8421
+      TEMPER_DATABASE_URL: postgresql://temper:temper@localhost:5434/temper
+      TEMPER_DASHBOARD_TOKEN: ${TEMPER_DASHBOARD_TOKEN:-dev-token}
+      TEMPER_SAFETY_ENV: development
+      POLL_INTERVAL: "10"
+      WORKER_ID: sdlc-docker
+    volumes:
+      - ${HOME}/.ssh:/root/.ssh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  temper_pgdata:
