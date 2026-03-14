@@ -29,12 +29,12 @@ export interface AgentExecution {
   end_time: string | null;
   duration_seconds: number | null;
   total_tokens: number;
-  num_llm_calls: number;
-  num_tool_calls: number;
+  total_llm_calls: number;
+  total_tool_calls: number;
   output_data: string | null;
   error_message: string | null;
-  llm_calls: LLMCall[];
-  tool_executions: ToolCall[];
+  llm_calls: LLMCall[] | null;
+  tool_calls: ToolCall[] | null;
 }
 
 export interface StageExecution {
@@ -47,7 +47,7 @@ export interface StageExecution {
   input_data: Record<string, unknown> | null;
   output_data: string | null;
   error_message: string | null;
-  agents: AgentExecution[];
+  agents: AgentExecution[] | null;
 }
 
 export interface WorkflowExecution {
@@ -63,11 +63,10 @@ export interface WorkflowExecution {
   total_llm_calls: number;
   total_tool_calls: number;
   error_message: string | null;
-  stages: StageExecution[];
+  stages: StageExecution[] | null;
 }
 
 export async function fetchExecution(runId: string): Promise<WorkflowExecution> {
-  // Execution data is embedded in the run's result.execution field
   const run = await fetchRun(runId);
   const result = run.result as Record<string, unknown> | null;
   if (!result?.execution) {

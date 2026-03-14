@@ -8,8 +8,8 @@ function formatDuration(seconds: number | null): string {
   return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
-function formatTokens(n: number): string {
-  if (n === 0) return '-';
+function formatTokens(n: number | null | undefined): string {
+  if (!n) return '-';
   if (n < 1000) return String(n);
   return `${(n / 1000).toFixed(1)}k`;
 }
@@ -20,6 +20,8 @@ function StatusDot({ status }: { status: string }) {
 
 function AgentRow({ agent }: { agent: AgentExecution }) {
   const [expanded, setExpanded] = useState(false);
+  const llmCalls = agent.llm_calls || [];
+  const toolCalls = agent.tool_calls || [];
 
   return (
     <div className="agent-row">
@@ -29,9 +31,9 @@ function AgentRow({ agent }: { agent: AgentExecution }) {
           <span className="agent-name">{agent.agent_name}</span>
         </div>
         <div className="agent-stats">
-          {agent.total_tokens > 0 && <span className="stat">{formatTokens(agent.total_tokens)} tok</span>}
-          {agent.num_llm_calls > 0 && <span className="stat">{agent.num_llm_calls} llm</span>}
-          {agent.num_tool_calls > 0 && <span className="stat">{agent.num_tool_calls} tool</span>}
+          {(agent.total_tokens || 0) > 0 && <span className="stat">{formatTokens(agent.total_tokens)} tok</span>}
+          {(agent.total_llm_calls || 0) > 0 && <span className="stat">{agent.total_llm_calls} llm</span>}
+          {(agent.total_tool_calls || 0) > 0 && <span className="stat">{agent.total_tool_calls} tool</span>}
           <span className="stat">{formatDuration(agent.duration_seconds)}</span>
           <span className="expand-icon">{expanded ? '\u25B4' : '\u25BE'}</span>
         </div>
@@ -47,10 +49,10 @@ function AgentRow({ agent }: { agent: AgentExecution }) {
               <pre className="output-pre">{typeof agent.output_data === 'string' ? agent.output_data.slice(0, 2000) : JSON.stringify(agent.output_data, null, 2).slice(0, 2000)}</pre>
             </div>
           )}
-          {agent.llm_calls.length > 0 && (
+          {llmCalls.length > 0 && (
             <div className="calls-section">
-              <div className="output-label">LLM Calls ({agent.llm_calls.length})</div>
-              {agent.llm_calls.map((call) => (
+              <div className="output-label">LLM Calls ({llmCalls.length})</div>
+              {llmCalls.map((call) => (
                 <div key={call.id} className="call-row">
                   <span className="call-model">{call.model}</span>
                   <span className="stat">{call.prompt_tokens}+{call.completion_tokens} tok</span>
@@ -60,10 +62,10 @@ function AgentRow({ agent }: { agent: AgentExecution }) {
               ))}
             </div>
           )}
-          {agent.tool_executions.length > 0 && (
+          {toolCalls.length > 0 && (
             <div className="calls-section">
-              <div className="output-label">Tool Calls ({agent.tool_executions.length})</div>
-              {agent.tool_executions.map((call) => (
+              <div className="output-label">Tool Calls ({toolCalls.length})</div>
+              {toolCalls.map((call) => (
                 <div key={call.id} className="call-row">
                   <span className="call-model">{call.tool_name}</span>
                   <span className="stat">{formatDuration(call.duration_seconds)}</span>
@@ -80,7 +82,8 @@ function AgentRow({ agent }: { agent: AgentExecution }) {
 
 function StageRow({ stage, index }: { stage: StageExecution; index: number }) {
   const [expanded, setExpanded] = useState(false);
-  const totalTokens = stage.agents.reduce((sum, a) => sum + a.total_tokens, 0);
+  const agents = stage.agents || [];
+  const totalTokens = agents.reduce((sum, a) => sum + (a.total_tokens || 0), 0);
 
   return (
     <div className={`stage-row ${stage.status}`}>
@@ -102,7 +105,7 @@ function StageRow({ stage, index }: { stage: StageExecution; index: number }) {
           {stage.error_message && (
             <div className="error-block">{stage.error_message}</div>
           )}
-          {stage.agents.map((agent) => (
+          {agents.map((agent) => (
             <AgentRow key={agent.id} agent={agent} />
           ))}
         </div>
@@ -147,6 +150,8 @@ export default function ExecutionView({ runId, onClose }: { runId: string; onClo
     );
   }
 
+  const stages = execution.stages || [];
+
   return (
     <div className="execution-view">
       <div className="exec-header">
@@ -168,7 +173,7 @@ export default function ExecutionView({ runId, onClose }: { runId: string; onClo
         </div>
         <div className="summary-item">
           <span className="summary-label">Stages</span>
-          <span className="summary-value">{execution.stages.length}</span>
+          <span className="summary-value">{stages.length}</span>
         </div>
         <div className="summary-item">
           <span className="summary-label">ID</span>
@@ -182,7 +187,7 @@ export default function ExecutionView({ runId, onClose }: { runId: string; onClo
 
       <div className="section-title">Pipeline Stages</div>
       <div className="stages-list">
-        {execution.stages.map((stage, i) => (
+        {stages.map((stage, i) => (
           <StageRow key={stage.id} stage={stage} index={i} />
         ))}
       </div>
