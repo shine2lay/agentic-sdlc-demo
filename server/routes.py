@@ -8,6 +8,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -145,4 +146,12 @@ def get_run_events(
             for e in events
         ],
         "total": len(events),
+    }
+
+
+@router.get("/metrics")
+def metrics():
+    return {
+        "cpu_percent": psutil.cpu_percent(),
+        "memory_used_mb": psutil.virtual_memory().used / 1024 / 1024
     }
