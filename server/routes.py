@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+import httpx
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -20,6 +22,10 @@ router = APIRouter()
 
 START_TIME = time.time()
 
+TEMPER_API_URL = os.getenv("TEMPER_API_URL", "http://localhost:8420")
+TEMPER_API_TOKEN = os.getenv("TEMPER_API_TOKEN", "dev-token")
+SDLC_REPO_URL = "git@github.com:shine2lay/agentic-sdlc-demo.git"
+
 
 class CreateRunRequest(BaseModel):
     workflow: str
@@ -29,6 +35,10 @@ class CreateRunRequest(BaseModel):
 class CreateRunResponse(BaseModel):
     id: str
     status: str = "pending"
+
+
+class SuggestRequest(BaseModel):
+    suggestion: str
 
 
 @router.get("/health")
@@ -56,6 +66,46 @@ def stats(session: Session = Depends(get_session)):
 def status():
     uptime = int(time.time() - START_TIME)
     return {"status": "operational", "uptime_seconds": uptime}
+
+
+@router.get("/metrics")
+def metrics():
+    return {
+        "cpu_percent": psutil.cpu_percent(),
+        "memory_used_mb": psutil.virtual_memory().used / 1024 / 1024,
+    }
+
+
+@router.post("/api/suggest")
+async def suggest(body: SuggestRequest):
+    """Submit a feature suggestion to the SDLC pipeline."""
+    if not body.suggestion.strip():
+        raise HTTPException(status_code=400, detail="Suggestion cannot be empty")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{TEMPER_API_URL}/api/runs",
+                json={
+                    "workflow": "sdlc_deploy_test",
+                    "inputs": {
+                        "repo_url": SDLC_REPO_URL,
+                        "task_description": body.suggestion,
+                    },
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {TEMPER_API_TOKEN}",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        return {
+            "status": "submitted",
+            "execution_id": data.get("execution_id"),
+            "message": "Your suggestion has been submitted to the SDLC pipeline.",
+        }
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Failed to reach SDLC pipeline: {e}")
 
 
 @router.post("/runs", response_model=CreateRunResponse)
@@ -146,12 +196,4 @@ def get_run_events(
             for e in events
         ],
         "total": len(events),
-    }
-
-
-@router.get("/metrics")
-def metrics():
-    return {
-        "cpu_percent": psutil.cpu_percent(),
-        "memory_used_mb": psutil.virtual_memory().used / 1024 / 1024
     }

@@ -32,6 +32,19 @@ export function connectRunWebSocket(runId: string, onMessage: (msg: unknown) => 
   return ws;
 }
 
+export async function submitSuggestion(suggestion: string): Promise<{ status: string; execution_id?: string; message: string }> {
+  const res = await fetch(`${API_URL}/api/suggest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ suggestion }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Request failed' }));
+    throw new Error(err.detail || 'Request failed');
+  }
+  return res.json();
+}
+
 export interface Run {
   id: string;
   workflow: string;

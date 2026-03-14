@@ -89,6 +89,82 @@
 .run-status.completed { background: #052e16; color: var(--green); }
 .run-status.failed { background: #450a0a; color: var(--red); }
 
+.suggest-section {
+  margin-bottom: 2rem;
+}
+
+.suggest-box {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.suggest-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.15s;
+}
+
+.suggest-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.suggest-input::placeholder {
+  color: var(--text-muted);
+}
+
+.suggest-input:disabled {
+  opacity: 0.5;
+}
+
+.suggest-button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.suggest-button:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.suggest-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.suggest-feedback {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.suggest-feedback.success {
+  background: #052e16;
+  color: var(--green);
+}
+
+.suggest-feedback.error {
+  background: #450a0a;
+  color: var(--red);
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;
