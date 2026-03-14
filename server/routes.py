@@ -76,7 +76,7 @@ def metrics():
     }
 
 
-@router.post("/api/suggest")
+@router.post("/suggest")
 async def suggest(body: SuggestRequest):
     """Submit a feature suggestion to the SDLC pipeline."""
     if not body.suggestion.strip():
