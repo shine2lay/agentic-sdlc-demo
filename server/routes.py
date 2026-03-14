@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-import httpx
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -22,9 +20,7 @@ router = APIRouter()
 
 START_TIME = time.time()
 
-TEMPER_API_URL = os.getenv("TEMPER_API_URL", "http://localhost:8420")
-TEMPER_API_TOKEN = os.getenv("TEMPER_API_TOKEN", "dev-token")
-SDLC_REPO_URL = "git@github.com:shine2lay/agentic-sdlc-demo.git"
+SDLC_WORKFLOW = "sdlc_deploy_test"
 
 
 class CreateRunRequest(BaseModel):
@@ -41,6 +37,18 @@ class SuggestRequest(BaseModel):
     suggestion: str
 
 
+class ClaimRequest(BaseModel):
+    worker_id: str
+
+
+class CompleteRequest(BaseModel):
+    status: str  # completed | failed
+    result: dict[str, Any] | None = None
+    error: str | None = None
+
+
+# ── Utility endpoints ──────────────────────────────────────────────
+
 @router.get("/health")
 def health():
     return {"status": "ok"}
@@ -48,7 +56,7 @@ def health():
 
 @router.get("/version")
 def version():
-    return {"version": "0.3.0", "deployed_by": "agentic-sdlc"}
+    return {"version": "0.4.0", "deployed_by": "agentic-sdlc"}
 
 
 @router.get("/ping")
@@ -76,37 +84,66 @@ def metrics():
     }
 
 
+# ── Suggestion endpoint ───────────────────────────────────────────
+
 @router.post("/suggest")
-async def suggest(body: SuggestRequest):
-    """Submit a feature suggestion to the SDLC pipeline."""
+def suggest(body: SuggestRequest, session: Session = Depends(get_session)):
+    """Submit a feature suggestion. Creates a pending run for the worker."""
     if not body.suggestion.strip():
         raise HTTPException(status_code=400, detail="Suggestion cannot be empty")
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(
-                f"{TEMPER_API_URL}/api/runs",
-                json={
-                    "workflow": "sdlc_deploy_test",
-                    "inputs": {
-                        "repo_url": SDLC_REPO_URL,
-                        "task_description": body.suggestion,
-                    },
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {TEMPER_API_TOKEN}",
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-        return {
-            "status": "submitted",
-            "execution_id": data.get("execution_id"),
-            "message": "Your suggestion has been submitted to the SDLC pipeline.",
-        }
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to reach SDLC pipeline: {e}")
+    run = Run(
+        id=str(uuid.uuid4()),
+        workflow=SDLC_WORKFLOW,
+        inputs=json.dumps({"task_description": body.suggestion}),
+    )
+    session.add(run)
+    session.commit()
+    return {
+        "status": "submitted",
+        "run_id": run.id,
+        "message": "Your suggestion has been submitted. A worker will pick it up shortly.",
+    }
 
+
+# ── Worker endpoints ──────────────────────────────────────────────
+
+@router.post("/runs/{run_id}/claim")
+def claim_run(run_id: str, body: ClaimRequest, session: Session = Depends(get_session)):
+    """Worker claims a pending run."""
+    run = session.get(Run, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.status != "pending":
+        raise HTTPException(status_code=409, detail=f"Run is already {run.status}")
+    run.status = "claimed"
+    run.worker_id = body.worker_id
+    run.started_at = datetime.now(UTC)
+    session.add(run)
+    session.commit()
+    return {"status": "claimed", "run_id": run.id}
+
+
+@router.put("/runs/{run_id}/status")
+def update_run_status(
+    run_id: str, body: CompleteRequest, session: Session = Depends(get_session)
+):
+    """Worker updates run status (running, completed, failed)."""
+    run = session.get(Run, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    run.status = body.status
+    if body.result is not None:
+        run.result = json.dumps(body.result)
+    if body.error is not None:
+        run.error = body.error
+    if body.status in ("completed", "failed"):
+        run.completed_at = datetime.now(UTC)
+    session.add(run)
+    session.commit()
+    return {"status": run.status, "run_id": run.id}
+
+
+# ── Run CRUD ──────────────────────────────────────────────────────
 
 @router.post("/runs", response_model=CreateRunResponse)
 def create_run(body: CreateRunRequest, session: Session = Depends(get_session)):
@@ -137,9 +174,11 @@ def list_runs(
                 "id": r.id,
                 "workflow": r.workflow,
                 "status": r.status,
+                "inputs": r.get_inputs(),
                 "created_at": r.created_at.isoformat(),
                 "started_at": r.started_at.isoformat() if r.started_at else None,
                 "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+                "result": r.get_result(),
                 "error": r.error,
             }
             for r in runs

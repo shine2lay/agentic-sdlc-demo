@@ -3,5 +3,4 @@ uvicorn[standard]>=0.30.0
 psycopg2-binary>=2.9.0
 sqlmodel>=0.0.22
 python-dotenv>=1.0.0
-httpx>=0.27.0
 psutil>=5.9.0
