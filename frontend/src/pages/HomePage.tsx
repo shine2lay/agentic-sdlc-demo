@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, type Run } from '../api';
 
-function hasExecution(run: Run): boolean {
+function isClickable(run: Run): boolean {
+  // Running/claimed runs are clickable (will show loading until execution is available)
+  if (run.status === 'running' || run.status === 'claimed') return true;
+  // Completed/failed runs need execution data
   if (!run.result) return false;
   const r = run.result as Record<string, unknown>;
   return !!(r.execution_id || r.execution);
@@ -129,7 +132,7 @@ export function HomePage() {
       ) : (
         <div className="flex flex-col gap-2">
           {runs.map((run) => {
-            const clickable = hasExecution(run);
+            const clickable = isClickable(run);
             return (
               <div
                 key={run.id}
