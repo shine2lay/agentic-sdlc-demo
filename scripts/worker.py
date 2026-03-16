@@ -144,6 +144,30 @@ def fetch_execution_snapshot(client: httpx.Client, execution_id: str) -> dict | 
     return None
 
 
+def get_recent_runs_summary(exclude_id: str, limit: int = 10) -> str:
+    """Fetch recent runs and format as context for the duplicate check agent."""
+    with Session(engine) as session:
+        runs = session.exec(
+            select(Run)
+            .where(Run.id != exclude_id)
+            .where(Run.status.in_(["completed", "running", "claimed"]))  # type: ignore[union-attr]
+            .order_by(Run.created_at.desc())  # type: ignore[union-attr]
+            .limit(limit)
+        ).all()
+
+    if not runs:
+        return "No recent runs."
+
+    lines = []
+    for r in runs:
+        inputs_data = json.loads(r.inputs) if r.inputs else {}
+        task = inputs_data.get("task_description", "(no description)")
+        lines.append(
+            f"- [{r.id[:8]}] status={r.status} | {r.created_at:%Y-%m-%d %H:%M} | {task[:120]}"
+        )
+    return "\n".join(lines)
+
+
 def process_run(run_id: str, workflow: str, inputs: dict) -> None:
     task = inputs.get("task_description", "")
     if not task:
@@ -154,6 +178,10 @@ def process_run(run_id: str, workflow: str, inputs: dict) -> None:
     # Inject repo_url if not provided
     if "repo_url" not in inputs:
         inputs["repo_url"] = SDLC_REPO_URL
+
+    # Inject recent runs for duplicate detection
+    if "recent_runs" not in inputs:
+        inputs["recent_runs"] = get_recent_runs_summary(run_id)
 
     update_run(run_id, "running")
     log(f"  Task: {task[:80]}...")

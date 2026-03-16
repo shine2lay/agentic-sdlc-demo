@@ -2,16 +2,19 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 
 export async function fetchHealth(): Promise<{ status: string }> {
   const res = await fetch(`${API_URL}/api/health`);
+  if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
   return res.json();
 }
 
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
+  if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
   return res.json();
 }
 
 export async function fetchRun(id: string): Promise<Run> {
   const res = await fetch(`${API_URL}/api/runs/${id}`);
+  if (!res.ok) throw new Error(`Fetch run failed: ${res.status}`);
   return res.json();
 }
 
