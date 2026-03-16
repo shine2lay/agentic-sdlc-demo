@@ -40,10 +40,24 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const RUNS_CACHE_KEY = 'sdlc-runs-cache';
+
+function getCachedRuns(): Run[] {
+  try {
+    const cached = sessionStorage.getItem(RUNS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch { return []; }
+}
+
+function cacheRuns(runs: Run[]) {
+  try { sessionStorage.setItem(RUNS_CACHE_KEY, JSON.stringify(runs)); } catch { /* ignore */ }
+}
+
 export function HomePage() {
   const navigate = useNavigate();
   const [health, setHealth] = useState<string>('loading');
-  const [runs, setRuns] = useState<Run[]>([]);
+  const [runs, setRuns] = useState<Run[]>(getCachedRuns);
+  const [loading, setLoading] = useState(runs.length === 0);
   const [suggestion, setSuggestion] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
@@ -54,12 +68,21 @@ export function HomePage() {
       .catch(() => setHealth('error'));
 
     fetchRuns()
-      .then((data) => setRuns(data?.runs ?? []))
-      .catch(() => {});
+      .then((data) => {
+        const r = data?.runs ?? [];
+        setRuns(r);
+        cacheRuns(r);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
 
     const interval = setInterval(() => {
       fetchRuns()
-        .then((data) => setRuns(data?.runs ?? []))
+        .then((data) => {
+          const r = data?.runs ?? [];
+          setRuns(r);
+          cacheRuns(r);
+        })
         .catch(() => {});
     }, 5000);
 
@@ -125,7 +148,19 @@ export function HomePage() {
         Runs
       </div>
 
-      {runs.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-4 py-3 flex justify-between items-center">
+              <div className="flex flex-col gap-2">
+                <div className="skeleton h-4 w-32" />
+                <div className="skeleton h-3 w-48" />
+              </div>
+              <div className="skeleton h-5 w-16 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : runs.length === 0 ? (
         <div className="text-center py-12 text-[var(--temper-text-muted)]">
           No runs yet. Submit a suggestion to kick off the pipeline.
         </div>
