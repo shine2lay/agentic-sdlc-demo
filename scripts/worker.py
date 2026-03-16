@@ -120,7 +120,17 @@ def start_pipeline(client: httpx.Client, workflow: str, inputs: dict) -> str:
     return resp.json()["execution_id"]
 
 
-def poll_pipeline(client: httpx.Client, execution_id: str) -> dict:
+def poll_pipeline(
+    client: httpx.Client,
+    execution_id: str,
+    heroku_run_id: str | None = None,
+) -> dict:
+    """Poll temper-ai until the pipeline finishes.
+
+    When *heroku_run_id* is provided, partial execution snapshots are
+    written back to the Heroku DB every poll cycle so the frontend can
+    show live progress (stages completing one by one).
+    """
     while True:
         resp = client.get(
             f"{TEMPER_API_URL}/api/runs/{execution_id}",
@@ -128,6 +138,17 @@ def poll_pipeline(client: httpx.Client, execution_id: str) -> dict:
         )
         resp.raise_for_status()
         data = resp.json()
+
+        # Write partial execution snapshot to Heroku DB
+        if heroku_run_id:
+            snapshot = fetch_execution_snapshot(client, execution_id)
+            if snapshot:
+                partial_result = {
+                    "execution_id": execution_id,
+                    "execution": snapshot,
+                }
+                update_run(heroku_run_id, "running", result=partial_result)
+
         if data.get("status") in ("completed", "failed"):
             return data
         time.sleep(15)
@@ -191,7 +212,7 @@ def process_run(run_id: str, workflow: str, inputs: dict) -> None:
             execution_id = start_pipeline(client, workflow, inputs)
             log(f"  Pipeline started: {execution_id}")
 
-            result = poll_pipeline(client, execution_id)
+            result = poll_pipeline(client, execution_id, heroku_run_id=run_id)
             status = result.get("status", "unknown")
             log(f"  Pipeline finished: {status}")
 
