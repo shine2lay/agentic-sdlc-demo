@@ -7,6 +7,18 @@ import type { WorkflowExecution } from '../execution/types';
 
 const POLL_INTERVAL_MS = 5000;
 
+/**
+ * Cheap fingerprint: status + stage count + stage statuses + agent count.
+ * Only triggers a store update when the execution actually changed.
+ */
+function execFingerprint(exec: WorkflowExecution): string {
+  const stages = exec.stages ?? [];
+  const stageParts = stages.map(
+    (s) => `${s.stage_name}:${s.status}:${(s.agents ?? []).length}`
+  );
+  return `${exec.status}|${stages.length}|${stageParts.join(',')}`;
+}
+
 export function RunPage() {
   const { runId } = useParams<{ runId: string }>();
   const navigate = useNavigate();
@@ -14,13 +26,16 @@ export function RunPage() {
   const [runStatus, setRunStatus] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const fingerprintRef = useRef<string>('');
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = undefined;
     }
+    setIsPolling(false);
   }, []);
 
   const loadRun = useCallback(async (id: string): Promise<boolean> => {
@@ -31,15 +46,20 @@ export function RunPage() {
 
       const result = run.result as Record<string, unknown> | null;
       if (result?.execution) {
-        setExecution(result.execution as WorkflowExecution);
+        const exec = result.execution as WorkflowExecution;
+        const fp = execFingerprint(exec);
+        // Only update state if execution actually changed
+        if (fp !== fingerprintRef.current) {
+          fingerprintRef.current = fp;
+          setExecution(exec);
+        }
       }
 
-      // Stop polling if run reached a terminal state
       const isTerminal = run.status === 'completed' || run.status === 'failed';
       return isTerminal;
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : 'Failed to load');
-      return true; // stop polling on fetch error
+      return true;
     }
   }, []);
 
@@ -50,10 +70,11 @@ export function RunPage() {
     setRunStatus(null);
     setRunError(null);
     setFetchError(null);
+    fingerprintRef.current = '';
 
     loadRun(runId).then((done) => {
       if (done) return;
-      // Poll until terminal state
+      setIsPolling(true);
       pollRef.current = setInterval(async () => {
         const finished = await loadRun(runId);
         if (finished) stopPolling();
@@ -77,19 +98,18 @@ export function RunPage() {
     );
   }
 
-  // Show execution view as soon as we have any execution data
-  // (partial snapshots during running, or full data when complete)
   if (execution) {
     return (
       <ExecutionView
-        key={`${runId}-${execution.status}`}
+        key={runId}
         execution={execution}
         onClose={() => navigate('/')}
+        isLive={isPolling}
       />
     );
   }
 
-  // No execution data yet — show loading/waiting state
+  // No execution data yet
   const isActive = runStatus === 'running' || runStatus === 'claimed' || runStatus === 'pending';
   const isFailed = runStatus === 'failed';
 
@@ -102,9 +122,7 @@ export function RunPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <span className="text-sm text-gray-400">
-          {runId?.slice(0, 8)}
-        </span>
+        <span className="text-sm text-gray-400">{runId?.slice(0, 8)}</span>
         {runStatus && (
           <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
             isFailed ? 'bg-red-900/50 text-red-400 border-red-700/50' :

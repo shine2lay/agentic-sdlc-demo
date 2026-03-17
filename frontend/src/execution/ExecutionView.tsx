@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useExecutionStore } from './store';
 import { WorkflowHeader } from './components/layout/WorkflowHeader';
@@ -36,25 +36,36 @@ function LoadingSkeleton() {
 interface ExecutionViewProps {
   execution: WorkflowExecution;
   onClose: () => void;
+  /** True when the parent is actively polling for updates */
+  isLive?: boolean;
 }
 
-export function ExecutionView({ execution, onClose }: ExecutionViewProps) {
+export function ExecutionView({ execution, onClose, isLive }: ExecutionViewProps) {
   const workflow = useExecutionStore((s) => s.workflow);
   const stages = useExecutionStore((s) => s.stages);
   const eventLog = useExecutionStore((s) => s.eventLog);
   const llmCalls = useExecutionStore((s) => s.llmCalls);
   const applySnapshot = useExecutionStore((s) => s.applySnapshot);
   const reset = useExecutionStore((s) => s.reset);
+  const appliedRef = useRef<WorkflowExecution | null>(null);
 
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('sdlc-active-tab') ?? 'dag';
   });
 
-  // Apply execution data to the store
+  // Apply execution data to the store — only when the object reference
+  // actually changes (RunPage skips updates when fingerprint is the same)
   useEffect(() => {
-    applySnapshot(execution);
+    if (execution !== appliedRef.current) {
+      appliedRef.current = execution;
+      applySnapshot(execution);
+    }
+  }, [execution, applySnapshot]);
+
+  // Clean up store on unmount
+  useEffect(() => {
     return () => reset();
-  }, [execution, applySnapshot, reset]);
+  }, [reset]);
 
   // Persist active tab
   useEffect(() => {
@@ -73,7 +84,7 @@ export function ExecutionView({ execution, onClose }: ExecutionViewProps) {
   return (
     <ReactFlowProvider>
       <div className="flex flex-col h-full bg-[var(--temper-bg)]">
-        <WorkflowHeader onClose={onClose} />
+        <WorkflowHeader onClose={onClose} isLive={isLive} />
         <SummaryBar />
 
         <ViewTabs

@@ -8,9 +8,10 @@ const DURATION_TICK_MS = 1000;
 
 interface WorkflowHeaderProps {
   onClose: () => void;
+  isLive?: boolean;
 }
 
-export function WorkflowHeader({ onClose }: WorkflowHeaderProps) {
+export function WorkflowHeader({ onClose, isLive }: WorkflowHeaderProps) {
   const workflow = useExecutionStore((s) => s.workflow);
   const select = useExecutionStore((s) => s.select);
 
@@ -71,6 +72,14 @@ export function WorkflowHeader({ onClose }: WorkflowHeaderProps) {
         >
           {displayDuration}
         </span>
+
+        {/* Live polling indicator — pushed to the right */}
+        {isLive && (
+          <div className="ml-auto flex items-center gap-1.5 text-[11px] text-blue-400/70">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            live
+          </div>
+        )}
       </header>
 
       {workflow?.status === 'failed' && workflow?.error_message && (
