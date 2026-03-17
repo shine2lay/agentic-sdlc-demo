@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 import time
 import uuid
 from datetime import UTC, datetime
@@ -88,6 +89,12 @@ def metrics():
 def countdown(from_: int = Query(default=10, ge=1)):
     """Returns a countdown array from the given number to 1."""
     return list(range(from_, 0, -1))
+
+
+@router.get("/dice")
+def roll_dice():
+    """Roll a six-sided die and return the result."""
+    return {"value": random.randint(1, 6)}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
