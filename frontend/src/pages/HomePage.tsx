@@ -174,8 +174,10 @@ export function HomePage() {
                 className={`bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-4 py-3 flex justify-between items-center transition-colors ${clickable ? 'cursor-pointer hover:border-[var(--temper-accent)]' : ''}`}
                 onClick={() => clickable && navigate(`/runs/${run.id}`)}
               >
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium text-sm">{run.workflow}</span>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="font-medium text-sm truncate">
+                    {(run.inputs as Record<string, unknown>)?.task_description as string || run.workflow}
+                  </span>
                   <span className="text-xs text-[var(--temper-text-muted)]">
                     {run.id.slice(0, 8)} &middot; {new Date(run.created_at).toLocaleString()}
                   </span>
