@@ -126,7 +126,7 @@ export function HomePage() {
         <div className="flex gap-3 items-end">
           <textarea
             className="flex-1 bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-3 py-2 text-sm text-[var(--temper-text)] placeholder-[var(--temper-text-dim)] resize-y min-h-[60px] focus:outline-none focus:border-[var(--temper-accent)] transition-colors"
-            placeholder="Describe a feature or change you'd like to see..."
+            placeholder="Describe a feature or change you'd like to see. Your suggestion will be triaged, analyzed, and processed through our agentic AI pipeline - from initial review to code generation, testing, and deployment - all handled autonomously by AI agents."
             value={suggestion}
             onChange={(e) => setSuggestion(e.target.value)}
             rows={3}
