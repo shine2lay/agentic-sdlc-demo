@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { fetchRun } from '../api';
@@ -9,7 +9,7 @@ const POLL_INTERVAL_MS = 5000;
 
 /**
  * Cheap fingerprint: status + stage count + stage statuses + agent count.
- * Only triggers a store update when the execution actually changed.
+ * Only triggers a store/state update when the execution actually changed.
  */
 function execFingerprint(exec: WorkflowExecution): string {
   const stages = exec.stages ?? [];
@@ -29,6 +29,11 @@ export function RunPage() {
   const [isPolling, setIsPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const fingerprintRef = useRef<string>('');
+  const statusRef = useRef<string | null>(null);
+  const errorRef = useRef<string | null>(null);
+
+  // Stable callback — never causes re-renders itself
+  const onClose = useMemo(() => () => navigate('/'), [navigate]);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -41,14 +46,22 @@ export function RunPage() {
   const loadRun = useCallback(async (id: string): Promise<boolean> => {
     try {
       const run = await fetchRun(id);
-      setRunStatus(run.status);
-      setRunError(run.error ?? null);
+      const newError = run.error ?? null;
+
+      // Only update React state when values actually changed
+      if (run.status !== statusRef.current) {
+        statusRef.current = run.status;
+        setRunStatus(run.status);
+      }
+      if (newError !== errorRef.current) {
+        errorRef.current = newError;
+        setRunError(newError);
+      }
 
       const result = run.result as Record<string, unknown> | null;
       if (result?.execution) {
         const exec = result.execution as WorkflowExecution;
         const fp = execFingerprint(exec);
-        // Only update state if execution actually changed
         if (fp !== fingerprintRef.current) {
           fingerprintRef.current = fp;
           setExecution(exec);
@@ -103,7 +116,7 @@ export function RunPage() {
       <ExecutionView
         key={runId}
         execution={execution}
-        onClose={() => navigate('/')}
+        onClose={onClose}
         isLive={isPolling}
       />
     );
