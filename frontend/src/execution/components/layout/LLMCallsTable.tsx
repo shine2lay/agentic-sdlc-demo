@@ -197,10 +197,9 @@ export function LLMCallsTable() {
 
   if (llmCalls.size === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-2">
-        <span className="text-2xl">&#x1F4E1;</span>
-        <span className="text-sm">No LLM calls yet</span>
-        <span className="text-xs text-gray-600">LLM calls will appear as agents execute</span>
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-2 py-16">
+        <span className="text-sm font-medium">No LLM calls recorded</span>
+        <span className="text-xs text-gray-600">LLM call details appear when agents make model requests</span>
       </div>
     );
   }

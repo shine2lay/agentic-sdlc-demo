@@ -79,7 +79,7 @@ export function ViewTabs({
               {tab.value === 'dag' && <CountBadge count={stageCount} />}
               {tab.value === 'eventlog' && <CountBadge count={eventCount} />}
               {tab.value === 'llmcalls' && <CountBadge count={llmCallCount} />}
-              <span className="ml-1.5 text-[10px] opacity-40 hidden sm:inline">{tab.shortcut}</span>
+              <kbd className="ml-1.5 text-[9px] opacity-30 hidden sm:inline px-1 py-px rounded bg-gray-700/50 font-mono">{tab.shortcut}</kbd>
             </button>
           );
         })}
