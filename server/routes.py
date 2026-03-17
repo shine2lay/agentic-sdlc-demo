@@ -84,6 +84,12 @@ def metrics():
     }
 
 
+@router.get("/countdown")
+def countdown(from_: int = Query(default=10, ge=1)):
+    """Returns a countdown array from the given number to 1."""
+    return list(range(from_, 0, -1))
+
+
 # ── Suggestion endpoint ───────────────────────────────────────────
 
 @router.post("/suggest")
