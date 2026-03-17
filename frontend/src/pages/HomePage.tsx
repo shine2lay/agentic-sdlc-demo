@@ -109,7 +109,10 @@ export function HomePage() {
   return (
     <div className="max-w-4xl mx-auto p-8 h-full overflow-auto">
       <div className="flex justify-between items-center mb-8 pb-4 border-b border-[var(--temper-border)]">
-        <h1 className="text-xl font-semibold text-[var(--temper-text)]">Agentic SDLC</h1>
+        <div>
+          <h1 className="text-xl font-semibold text-[var(--temper-text)]">Agentic SDLC</h1>
+          <p className="text-sm text-[var(--temper-text-muted)] mt-1">Autonomous multi-agent software development pipeline</p>
+        </div>
         <div className="flex items-center gap-2 text-sm text-[var(--temper-text-muted)]">
           <StatusDot status={health} />
           {health === 'ok' ? 'API connected' : health === 'error' ? 'API unreachable' : 'Connecting...'}
