@@ -153,6 +153,16 @@ def check_palindrome(text: str = Query(..., description="Text to check for palin
     return {"text": text, "is_palindrome": is_pal, "cleaned_text": cleaned_text}
 
 
+@router.get("/word-count")
+def count_words(text: str = Query(..., description="Text to count words in")):
+    """Count the number of words in the provided text.
+    
+    Words are separated by whitespace. Multiple consecutive spaces are treated as a single separator.
+    """
+    word_count = len(text.split())
+    return {"text": text, "word_count": word_count}
+
+
 # ── Suggestion endpoint ───────────────────────────────────────────
 
 @router.post("/suggest")
