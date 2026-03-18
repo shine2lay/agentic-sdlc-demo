@@ -124,6 +124,12 @@ def check_prime(n: int = Query(..., ge=0, description="Number to check for prima
     return {"n": n, "is_prime": is_prime(n)}
 
 
+@router.get("/reverse")
+def reverse_text(text: str = Query(..., description="Text to reverse")):
+    """Reverse the provided text and return both original and reversed versions."""
+    return {"original": text, "reversed": text[::-1]}
+
+
 # ── Suggestion endpoint ───────────────────────────────────────────
 
 @router.post("/suggest")
