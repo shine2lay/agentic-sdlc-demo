@@ -137,7 +137,7 @@ export function HomePage() {
             onClick={handleSubmit}
             disabled={!suggestion.trim() || submitState === 'submitting'}
           >
-            {submitState === 'submitting' ? 'Submitting...' : 'Submit'}
+            {submitState === 'submitting' ? 'Submitting...' : 'Send Suggestion'}
           </button>
         </div>
         {submitMessage && (
