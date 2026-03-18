@@ -37,14 +37,15 @@ def is_prime(n: int) -> bool:
     return True
 
 
-def is_palindrome(text: str) -> bool:
+def is_palindrome(text: str) -> tuple[bool, str]:
     """Check if a string is a palindrome.
     
     Normalizes the input by converting to lowercase and removing 
     non-alphanumeric characters, then compares with its reverse.
+    Returns a tuple of (is_palindrome, cleaned_text).
     """
-    normalized = ''.join(c.lower() for c in text if c.isalnum())
-    return normalized == normalized[::-1]
+    cleaned = ''.join(c.lower() for c in text if c.isalnum())
+    return cleaned == cleaned[::-1], cleaned
 
 
 SDLC_WORKFLOW = "sdlc_deploy_test"
@@ -146,9 +147,10 @@ def check_palindrome(text: str = Query(..., description="Text to check for palin
     """Check if the provided text is a palindrome.
     
     Returns whether the text reads the same forwards and backwards,
-    ignoring case and non-alphanumeric characters.
+    ignoring case and non-alphanumeric characters, along with the cleaned text.
     """
-    return {"text": text, "is_palindrome": is_palindrome(text)}
+    is_pal, cleaned_text = is_palindrome(text)
+    return {"text": text, "is_palindrome": is_pal, "cleaned_text": cleaned_text}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
