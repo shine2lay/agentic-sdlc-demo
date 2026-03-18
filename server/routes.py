@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import random
 import time
 import uuid
@@ -20,6 +21,20 @@ from server.models import Run, RunEvent
 router = APIRouter()
 
 START_TIME = time.time()
+
+
+def is_prime(n: int) -> bool:
+    """Check if a number is prime."""
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(math.sqrt(n)) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
 
 SDLC_WORKFLOW = "sdlc_deploy_test"
 
@@ -101,6 +116,12 @@ def roll_dice():
 def coin_flip():
     """Flip a coin and return heads or tails randomly."""
     return {"result": random.choice(["heads", "tails"])}
+
+
+@router.get("/is-prime")
+def check_prime(n: int = Query(..., ge=0, description="Number to check for primality")):
+    """Check if a number is prime."""
+    return {"n": n, "is_prime": is_prime(n)}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
