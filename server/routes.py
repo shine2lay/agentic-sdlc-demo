@@ -36,6 +36,17 @@ def is_prime(n: int) -> bool:
             return False
     return True
 
+
+def is_palindrome(text: str) -> bool:
+    """Check if a string is a palindrome.
+    
+    Normalizes the input by converting to lowercase and removing 
+    non-alphanumeric characters, then compares with its reverse.
+    """
+    normalized = ''.join(c.lower() for c in text if c.isalnum())
+    return normalized == normalized[::-1]
+
+
 SDLC_WORKFLOW = "sdlc_deploy_test"
 
 
@@ -128,6 +139,16 @@ def check_prime(n: int = Query(..., ge=0, description="Number to check for prima
 def reverse_text(text: str = Query(..., description="Text to reverse")):
     """Reverse the provided text and return both original and reversed versions."""
     return {"original": text, "reversed": text[::-1]}
+
+
+@router.get("/palindrome")
+def check_palindrome(text: str = Query(..., description="Text to check for palindrome")):
+    """Check if the provided text is a palindrome.
+    
+    Returns whether the text reads the same forwards and backwards,
+    ignoring case and non-alphanumeric characters.
+    """
+    return {"text": text, "is_palindrome": is_palindrome(text)}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
