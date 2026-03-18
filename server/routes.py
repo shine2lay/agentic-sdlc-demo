@@ -97,6 +97,12 @@ def roll_dice():
     return {"value": random.randint(1, 6)}
 
 
+@router.get("/coin-flip")
+def coin_flip():
+    """Flip a coin and return heads or tails randomly."""
+    return {"result": random.choice(["heads", "tails"])}
+
+
 # ── Suggestion endpoint ───────────────────────────────────────────
 
 @router.post("/suggest")
