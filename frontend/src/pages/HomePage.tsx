@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, type Run } from '../api';
 
 function isClickable(run: Run): boolean {
-  // Running/claimed runs are clickable (will show loading until execution is available)
   if (run.status === 'running' || run.status === 'claimed') return true;
-  // Completed/failed runs need execution data
-  if (!run.result) return false;
-  const r = run.result as Record<string, unknown>;
-  return !!(r.execution_id || r.execution);
+  // List endpoint returns has_result instead of full result data
+  return !!(run as unknown as { has_result?: boolean }).has_result;
 }
 
 function StatusDot({ status }: { status: string }) {

@@ -257,8 +257,10 @@ def list_runs(
                 "created_at": r.created_at.isoformat(),
                 "started_at": r.started_at.isoformat() if r.started_at else None,
                 "completed_at": r.completed_at.isoformat() if r.completed_at else None,
-                "result": r.get_result(),
                 "error": r.error,
+                # Only include whether result exists, not the full data
+                # (execution snapshots are 2-3MB each — use GET /runs/{id} for full data)
+                "has_result": r.result is not None,
             }
             for r in runs
         ],
