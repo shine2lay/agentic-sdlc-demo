@@ -17,6 +17,7 @@ import { computeStagePositions } from '../../dagLayout';
 import { DAG_FIT_PADDING } from '../../constants';
 import { StageNode } from './StageNode';
 import { LoopBackEdge } from './LoopBackEdge';
+import { DagLegend } from './DagLegend';
 
 const nodeTypes = { stage: StageNode };
 const edgeTypes = { loopBack: LoopBackEdge };
@@ -180,32 +181,37 @@ export function DagView() {
   return (
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
-      className="w-full h-full"
+      className="w-full h-full flex flex-col"
       onKeyDown={onContainerKeyDown}
       aria-label="Workflow execution DAG. Use Tab to cycle through stages, Enter to select, Escape to deselect."
     >
-      <ReactFlow
-        defaultNodes={[]}
-        defaultEdges={[]}
-        onNodesChange={onNodesChange}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onInit={onInit}
-        fitView
-        minZoom={0.1}
-        maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-        nodesDraggable
-        nodesConnectable={false}
-      >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
-        <Controls position="bottom-left" />
-        <MiniMap
-          nodeColor="#1e2a4a"
-          maskColor="rgba(15, 23, 41, 0.7)"
-          position="bottom-right"
-        />
-      </ReactFlow>
+      <div className="flex-1 min-h-0">
+        <ReactFlow
+          defaultNodes={[]}
+          defaultEdges={[]}
+          onNodesChange={onNodesChange}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          onInit={onInit}
+          fitView
+          minZoom={0.1}
+          maxZoom={2}
+          proOptions={{ hideAttribution: true }}
+          nodesDraggable
+          nodesConnectable={false}
+        >
+          <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
+          <Controls position="bottom-left" />
+          <MiniMap
+            nodeColor="#1e2a4a"
+            maskColor="rgba(15, 23, 41, 0.7)"
+            position="bottom-right"
+          />
+        </ReactFlow>
+      </div>
+      <div className="p-4">
+        <DagLegend />
+      </div>
     </div>
   );
 }
