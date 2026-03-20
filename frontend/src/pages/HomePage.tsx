@@ -206,7 +206,7 @@ export function HomePage() {
                       {tokens && <span>{tokens}</span>}
                     </span>
                   )}
-                  {run.error && <span className="text-xs text-red-400 opacity-70">{run.error.slice(0, 80)}</span>}
+                  {run.error && <span className="text-xs text-red-400 font-medium">{run.error.slice(0, 100)}</span>}
                 </div>
                 <div className="flex items-center gap-3">
                   <StatusBadge status={run.status} />
