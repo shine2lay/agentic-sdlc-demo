@@ -168,6 +168,12 @@ def count_words(text: str = Query(..., description="Text to count words in")):
     return {"text": text, "word_count": word_count}
 
 
+@router.get("/hello")
+def hello():
+    """Return a simple greeting message."""
+    return {"message": "bonjour le monde"}
+
+
 # ── Suggestion endpoint ───────────────────────────────────────────
 
 @router.post("/suggest")
