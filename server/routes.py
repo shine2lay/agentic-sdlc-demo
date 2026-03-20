@@ -115,8 +115,9 @@ def version():
 @router.get("/server-info")
 def server_info():
     return {
-        "python_version": sys.version,
+        "python_version": sys.version.split()[0],
         "fastapi_version": fastapi.__version__,
+        "note": "Version info for demo purposes only",
     }
 
 
@@ -199,10 +200,6 @@ def count_words(text: str = Query(..., description="Text to count words in")):
     return {"text": text, "word_count": word_count}
 
 
-@router.get("/hello")
-def hello():
-    """Return a simple greeting message."""
-    return {"message": "bonjour le monde"}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
