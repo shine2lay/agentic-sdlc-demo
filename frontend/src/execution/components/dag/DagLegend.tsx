@@ -2,7 +2,7 @@
  * Legend component for the DAG view.
  * Displays color explanations for stage statuses and edge types.
  */
-import { STATUS_COLORS, STATUS_BG_COLORS, EDGE_COLORS } from '../../constants';
+import { STATUS_COLORS, EDGE_COLORS } from '../../constants';
 
 export function DagLegend() {
   return (

@@ -27,7 +27,7 @@
 -----> Installing dependencies
        Installing node modules (package.json)
        
-       up to date, audited 1 package in 283ms
+       up to date, audited 1 package in 280ms
        
        found 0 vulnerabilities
        
@@ -44,12 +44,17 @@
        140 packages are looking for funding
          run `npm fund` for details
        
-       found 0 vulnerabilities
+       1 high severity vulnerability
+       
+       To address all issues, run:
+         npm audit fix
+       
+       Run `npm audit` for details.
        
        > frontend@0.0.0 build
        > tsc -b && vite build
        
-       src/App.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+       src/execution/components/dag/DagLegend.tsx(5,25): error TS6133: 'STATUS_BG_COLORS' is declared but its value is never read.
 
 -----> Build failed
        
