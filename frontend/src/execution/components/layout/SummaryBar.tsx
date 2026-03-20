@@ -17,12 +17,15 @@ function pipelineColor(status: string): string {
  * Group stage executions by stage name, keeping only the latest execution
  * per unique stage name (handles retries / loops).
  */
-function buildPipeline(stages: Map<string, { stage_name?: string; name?: string; status: string }>): Array<{ name: string; status: string }> {
+function buildPipeline(stages: Map<string, { stage_name?: string; name?: string; status: string; agents?: Array<{ status: string }> }>): Array<{ name: string; status: string; progress: number }> {
   // Collect latest execution per logical stage name
-  const byName = new Map<string, { name: string; status: string }>();
+  const byName = new Map<string, { name: string; status: string; progress: number }>();
   for (const [, stage] of stages) {
     const name = stage.stage_name ?? stage.name ?? '';
-    byName.set(name, { name, status: stage.status });
+    const totalAgents = stage.agents?.length ?? 0;
+    const completedAgents = stage.agents?.filter((a) => a.status === 'completed').length ?? 0;
+    const progress = totalAgents > 0 ? Math.round((completedAgents / totalAgents) * 100) : 0;
+    byName.set(name, { name, status: stage.status, progress });
   }
   return Array.from(byName.values());
 }
@@ -138,13 +141,14 @@ export function SummaryBar() {
           title="Stage pipeline"
         >
           {pipeline.map((s, i) => (
-            <div key={s.name} className="flex items-center">
+            <div key={s.name} className="flex items-center gap-0.5">
               {i > 0 && <div className="w-2 h-px bg-gray-700/40" />}
               <div
                 className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{ backgroundColor: pipelineColor(s.status) }}
-                title={`${s.name}: ${s.status}`}
+                title={`${s.name}: ${s.status} (${s.progress}%)`}
               />
+              <span className="text-[10px] text-gray-400 shrink-0">{s.progress}%</span>
             </div>
           ))}
         </div>
