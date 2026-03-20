@@ -94,6 +94,12 @@ class CompleteRequest(BaseModel):
     error: str | None = None
 
 
+class PipelineStatsResponse(BaseModel):
+    completed: int
+    failed: int
+    total: int
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -118,6 +124,14 @@ def server_info():
 def stats(session: Session = Depends(get_session)):
     total_runs = session.exec(select(Run)).all()
     return {"total_runs": len(total_runs), "status": "healthy"}
+
+
+@router.get("/pipeline-stats", response_model=PipelineStatsResponse)
+def pipeline_stats(session: Session = Depends(get_session)):
+    all_runs = session.exec(select(Run)).all()
+    completed = sum(1 for run in all_runs if run.status == "completed")
+    failed = sum(1 for run in all_runs if run.status == "failed")
+    return {"completed": completed, "failed": failed, "total": completed + failed}
 
 
 @router.get("/status")
