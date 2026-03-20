@@ -9,7 +9,7 @@ import sys
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, List
 
 import fastapi
 import psutil
@@ -98,6 +98,15 @@ class PipelineStatsResponse(BaseModel):
     completed: int
     failed: int
     total: int
+
+
+class PipelineStage(BaseModel):
+    name: str
+    description: str
+
+
+class PipelineStagesResponse(BaseModel):
+    stages: List[PipelineStage]
 
 
 # ── Utility endpoints ──────────────────────────────────────────────
@@ -200,6 +209,17 @@ def count_words(text: str = Query(..., description="Text to count words in")):
     return {"text": text, "word_count": word_count}
 
 
+@router.get("/pipeline-stages", response_model=PipelineStagesResponse)
+def get_pipeline_stages():
+    """Return the list of SDLC pipeline stages with their descriptions."""
+    stages = [
+        PipelineStage(name="clone", description="Clone the repository"),
+        PipelineStage(name="branch", description="Create a new feature branch"),
+        PipelineStage(name="code_change", description="Make the code changes"),
+        PipelineStage(name="commit", description="Commit the changes"),
+        PipelineStage(name="push", description="Push to remote and merge"),
+    ]
+    return {"stages": stages}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
