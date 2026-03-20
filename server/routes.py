@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 import math
 import random
+import sys
 import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+import fastapi
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -85,6 +87,14 @@ def health():
 @router.get("/version")
 def version():
     return {"version": "0.4.0", "deployed_by": "agentic-sdlc"}
+
+
+@router.get("/server-info")
+def server_info():
+    return {
+        "python_version": sys.version,
+        "fastapi_version": fastapi.__version__,
+    }
 
 
 @router.get("/ping")
