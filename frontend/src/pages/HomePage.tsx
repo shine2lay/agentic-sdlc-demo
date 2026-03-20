@@ -2,6 +2,22 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, type Run } from '../api';
 
+function formatDuration(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined) return '';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.round((seconds % 3600) / 60);
+  return `${hours}h ${mins}m`;
+}
+
+function formatTokens(tokens: number | null | undefined): string {
+  if (tokens === null || tokens === undefined) return '';
+  if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M tokens`;
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K tokens`;
+  return `${tokens} tokens`;
+}
+
 function isClickable(run: Run): boolean {
   if (run.status === 'running' || run.status === 'claimed') return true;
   // List endpoint returns has_result instead of full result data
@@ -168,6 +184,8 @@ export function HomePage() {
         <div className="flex flex-col gap-2">
           {runs.map((run) => {
             const clickable = isClickable(run);
+            const duration = formatDuration(run.duration_seconds);
+            const tokens = formatTokens(run.total_tokens);
             return (
               <div
                 key={run.id}
@@ -181,6 +199,13 @@ export function HomePage() {
                   <span className="text-xs text-[var(--temper-text-muted)]">
                     {run.id.slice(0, 8)} &middot; {new Date(run.created_at).toLocaleString()}
                   </span>
+                  {(duration || tokens) && (
+                    <span className="text-xs text-[var(--temper-text-dim)]">
+                      {duration && <span>{duration}</span>}
+                      {duration && tokens && <span className="mx-2">&middot;</span>}
+                      {tokens && <span>{tokens}</span>}
+                    </span>
+                  )}
                   {run.error && <span className="text-xs text-red-400 opacity-70">{run.error.slice(0, 80)}</span>}
                 </div>
                 <div className="flex items-center gap-3">

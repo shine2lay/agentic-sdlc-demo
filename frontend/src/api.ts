@@ -59,4 +59,7 @@ export interface Run {
   created_at: string;
   started_at?: string | null;
   completed_at?: string | null;
+  has_result?: boolean;
+  duration_seconds?: number | null;
+  total_tokens?: number | null;
 }

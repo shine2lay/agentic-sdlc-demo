@@ -53,6 +53,23 @@ def is_palindrome(text: str) -> tuple[bool, str]:
 SDLC_WORKFLOW = "sdlc_deploy_test"
 
 
+def calculate_duration(started_at: datetime | None, completed_at: datetime | None) -> float | None:
+    """Calculate duration in seconds between started_at and completed_at."""
+    if started_at and completed_at:
+        return (completed_at - started_at).total_seconds()
+    return None
+
+
+def extract_total_tokens(result: dict | None) -> int | None:
+    """Extract total_tokens from execution result if available."""
+    if not result:
+        return None
+    execution = result.get("execution")
+    if execution and isinstance(execution, dict):
+        return execution.get("total_tokens")
+    return None
+
+
 class CreateRunRequest(BaseModel):
     workflow: str
     inputs: dict[str, Any] = {}
@@ -272,6 +289,8 @@ def list_runs(
                 # Only include whether result exists, not the full data
                 # (execution snapshots are 2-3MB each — use GET /runs/{id} for full data)
                 "has_result": r.result is not None,
+                "duration_seconds": calculate_duration(r.started_at, r.completed_at),
+                "total_tokens": extract_total_tokens(r.get_result()),
             }
             for r in runs
         ],
