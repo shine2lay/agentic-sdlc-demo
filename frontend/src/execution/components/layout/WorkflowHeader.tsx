@@ -47,7 +47,9 @@ export function WorkflowHeader({ onClose, isLive }: WorkflowHeaderProps) {
         </button>
 
         <h1 className="text-lg font-semibold text-gray-100 truncate">
-          {workflow?.workflow_name ?? 'Loading...'}
+          {workflow?.input_data?.task_description 
+            ? String(workflow.input_data.task_description) 
+            : (workflow?.workflow_name ?? 'Loading...')}
         </h1>
 
         <button
