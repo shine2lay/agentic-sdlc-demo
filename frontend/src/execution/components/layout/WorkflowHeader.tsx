@@ -37,7 +37,7 @@ export function WorkflowHeader({ onClose, isLive }: WorkflowHeaderProps) {
 
   return (
     <>
-      <header className="flex items-center gap-4 bg-gray-900 px-4 py-3 border-b border-gray-700/60 shrink-0">
+      <header className="flex items-center gap-4 bg-gray-800 px-4 py-3 border-b border-gray-700/60 shrink-0">
         <button
           onClick={onClose}
           className="text-gray-400 hover:text-gray-200 transition-colors shrink-0"
