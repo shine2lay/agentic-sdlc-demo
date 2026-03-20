@@ -60,6 +60,24 @@ export function formatTimestamp(ts: string | null | undefined): string {
   return ms > 0 ? `${time}.${String(ms).padStart(3, '0')}` : time;
 }
 
+/** Format a timestamp as a relative "time ago" string */
+export function formatTimeAgo(timestamp: string | null | undefined): string {
+  if (!timestamp) return '-';
+  const now = Date.now();
+  const then = new Date(ensureUTC(timestamp)).getTime();
+  const diffMs = now - then;
+  const diffSeconds = Math.floor(diffMs / 1000);
+
+  if (diffSeconds < 30) return 'just now';
+  if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+  const diffHours = Math.floor(diffSeconds / 3600);
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  const diffDays = Math.floor(diffSeconds / 86400);
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+
 /** Categorize an error message into a type with retryability info */
 export function categorizeError(msg: string): { type: string; retryable: boolean } {
   const lower = msg.toLowerCase();

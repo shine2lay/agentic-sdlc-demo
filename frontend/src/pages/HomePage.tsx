@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, type Run } from '../api';
+import { formatTimeAgo } from '../execution/utils';
 
 function formatDuration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined) return '';
@@ -197,7 +198,7 @@ export function HomePage() {
                     {(run.inputs as Record<string, unknown>)?.task_description as string || run.workflow}
                   </span>
                   <span className="text-xs text-[var(--temper-text-muted)]">
-                    {run.id.slice(0, 8)} &middot; {new Date(run.created_at).toLocaleString()}
+                    {run.id.slice(0, 8)} &middot; {formatTimeAgo(run.created_at)}
                   </span>
                   {(duration || tokens) && (
                     <span className="text-xs text-[var(--temper-text-dim)]">
