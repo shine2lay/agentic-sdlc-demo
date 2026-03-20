@@ -4,8 +4,8 @@ import { RunPage } from './pages/RunPage';
 
 export default function App() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-1">
+    <div className="flex flex-col h-screen">
+      <main className="flex-1 min-h-0">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/runs/:runId" element={<RunPage />} />
