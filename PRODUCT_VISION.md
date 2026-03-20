@@ -31,24 +31,31 @@ content, and never require manual cleanup.
 
 ## What Suggestions Should Build Toward
 
-Good suggestions make the app more useful, interesting, or polished
-as a demo. They should be things you'd want to show someone to
-demonstrate "look, AI agents built this."
+Every suggestion should move the product closer to the north star:
+demonstrating that AI agents can build real software. Ask yourself:
+"Would this make the demo more impressive or useful to someone
+seeing it for the first time?"
 
-### Encouraged
+### Encouraged — builds toward the north star
 
-- New API endpoints that do something interesting or useful
-  (math, text processing, data generation, utilities)
-- Visual improvements to the homepage or execution view
-  (better layout, colors, typography, status indicators)
-- Informational additions (tooltips, descriptions, help text)
-- Fun but professional features (random facts, word games, converters)
+- Features that make the pipeline results more visible
+  (show what was built, what changed, deployment status)
+- Improvements to the user experience of submitting and
+  tracking suggestions (better feedback, clearer status)
+- Visual polish that makes the demo look professional
+  (typography, spacing, colors, responsive layout)
+- Informational content that explains how the pipeline works
+  (tooltips, stage descriptions, architecture diagrams)
+- API endpoints that showcase the pipeline's capabilities
+  (things that are genuinely useful or demonstrate skill)
 
-### Discouraged (but not auto-rejected)
+### Rejected — doesn't build toward the north star
 
-- Purely cosmetic changes with no visible impact
-- Endpoints that duplicate existing functionality
-- Changes that only make sense with additional context the pipeline can't have
+- Random utility endpoints with no demo value (dice rolls,
+  coin flips, countdown timers — the app is not an API playground)
+- Changes that don't improve the demo experience for visitors
+- Features that only make sense if you already know the codebase
+- Anything that makes the product less coherent or professional
 
 ### Not Allowed
 
