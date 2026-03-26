@@ -147,7 +147,7 @@ export function HomePage() {
             disabled={submitState === 'submitting'}
           />
           <button
-            className="bg-[var(--temper-accent)] text-white rounded-lg px-5 py-2 text-sm font-medium whitespace-nowrap hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            className="bg-[var(--temper-accent)] text-black rounded-lg px-5 py-2 text-sm font-medium whitespace-nowrap hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
             onClick={handleSubmit}
             disabled={!suggestion.trim() || submitState === 'submitting'}
           >
