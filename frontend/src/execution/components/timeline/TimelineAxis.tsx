@@ -41,7 +41,7 @@ export function TimelineAxis({
 
   return (
     <div
-      className="relative border-b border-gray-700"
+      className="relative border-b border-temper-border"
       style={{
         height: TIMELINE.AXIS_HEIGHT,
         marginLeft: TIMELINE.LABEL_WIDTH,
@@ -54,8 +54,8 @@ export function TimelineAxis({
           className="absolute top-0 flex flex-col items-center"
           style={{ left: tick.x, transform: 'translateX(-50%)' }}
         >
-          <div className="w-px h-2 bg-gray-700" />
-          <span className="text-[9px] text-gray-600 mt-0.5 whitespace-nowrap">
+          <div className="w-px h-2 bg-temper-border" />
+          <span className="text-[9px] text-temper-text-dim mt-0.5 whitespace-nowrap">
             {tick.label}
           </span>
         </div>
@@ -63,10 +63,7 @@ export function TimelineAxis({
 
       {/* "Now" marker */}
       {nowX !== null && nowX >= 0 && nowX <= chartWidth && (
-        <div
-          className="absolute top-0 bottom-0 w-px bg-blue-400/60"
-          style={{ left: nowX }}
-        />
+        <div className="timeline-now-cursor" style={{ left: nowX }} />
       )}
     </div>
   );

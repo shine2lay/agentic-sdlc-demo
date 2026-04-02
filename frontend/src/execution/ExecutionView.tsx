@@ -1,111 +1,85 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+/**
+ * ExecutionView — adapted from Temper v0.1 for props-driven data flow.
+ * Receives workflow data as props from RunPage (REST polling).
+ * No WebSocket, no hooks for data fetching.
+ */
+import { useEffect, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useExecutionStore } from './store';
-import { WorkflowHeader } from './components/layout/WorkflowHeader';
-import { SummaryBar } from './components/layout/SummaryBar';
-import { ViewTabs } from './components/layout/ViewTabs';
-import { EventLogPanel } from './components/layout/EventLogPanel';
-import { LLMCallsTable } from './components/layout/LLMCallsTable';
-import { DagView } from './components/dag/DagView';
-import { TimelineView } from './components/timeline/TimelineView';
-import { DetailSheet } from './components/panels/DetailSheet';
-import { ErrorBoundary } from './components/shared/ErrorBoundary';
-import type { WorkflowExecution } from './types';
-
-function LoadingSkeleton() {
-  return (
-    <div className="flex flex-col h-full bg-[var(--temper-bg)]">
-      <div className="bg-[var(--temper-panel)] px-4 py-3 border-b border-[var(--temper-border)] shrink-0">
-        <div className="skeleton h-6 w-48" />
-      </div>
-      <div className="flex items-center gap-6 bg-[var(--temper-panel)]/50 px-4 py-2 border-b border-[var(--temper-border)] shrink-0">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="skeleton h-4 w-20" />
-        ))}
-      </div>
-      <div className="flex-1 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="skeleton h-8 w-8 rounded-full" />
-          <span className="text-sm text-[var(--temper-text-muted)]">Loading execution...</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { useExecutionStore } from '@/execution/store';
+import { WorkflowHeader } from '@/execution/components/layout/WorkflowHeader';
+import { WorkflowSummaryBar } from '@/execution/components/layout/WorkflowSummaryBar';
+import { ViewTabs } from '@/execution/components/layout/ViewTabs';
+import { EventLogPanel } from '@/execution/components/layout/EventLogPanel';
+import { LLMCallsTable } from '@/execution/components/layout/LLMCallsTable';
+import { ExecutionDAG } from '@/execution/components/dag/ExecutionDAG';
+import { TimelineChart } from '@/execution/components/timeline/TimelineChart';
+import { DetailSheet } from '@/execution/components/panels/DetailSheet';
+import { ErrorBoundary } from '@/execution/components/shared/ErrorBoundary';
+import type { WorkflowExecution } from '@/execution/types';
 
 interface ExecutionViewProps {
   execution: WorkflowExecution;
-  onClose: () => void;
-  /** True when the parent is actively polling for updates */
+  onClose?: () => void;
   isLive?: boolean;
 }
 
-export function ExecutionView({ execution, onClose, isLive }: ExecutionViewProps) {
-  const workflow = useExecutionStore((s) => s.workflow);
-  const stages = useExecutionStore((s) => s.stages);
-  const eventLog = useExecutionStore((s) => s.eventLog);
-  const llmCalls = useExecutionStore((s) => s.llmCalls);
+export default function ExecutionView({ execution }: ExecutionViewProps) {
   const applySnapshot = useExecutionStore((s) => s.applySnapshot);
+  const workflow = useExecutionStore((s) => s.workflow);
+  const selection = useExecutionStore((s) => s.selection);
   const reset = useExecutionStore((s) => s.reset);
-  const appliedRef = useRef<WorkflowExecution | null>(null);
 
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('sdlc-active-tab') ?? 'dag';
+    return localStorage.getItem('sdlc-active-tab') || 'dag';
   });
 
-  // Apply execution data to the store — only when the object reference
-  // actually changes (RunPage skips updates when fingerprint is the same)
+  // Apply snapshot when execution data changes
   useEffect(() => {
-    if (execution !== appliedRef.current) {
-      appliedRef.current = execution;
+    if (execution) {
       applySnapshot(execution);
     }
   }, [execution, applySnapshot]);
 
-  // Clean up store on unmount
+  // Clean up on unmount
   useEffect(() => {
     return () => reset();
   }, [reset]);
 
-  // Persist active tab
+  // Persist tab selection
   useEffect(() => {
     localStorage.setItem('sdlc-active-tab', activeTab);
   }, [activeTab]);
 
-  const filteredEventCount = useMemo(
-    () => eventLog.length,
-    [eventLog],
-  );
-
   if (!workflow) {
-    return <LoadingSkeleton />;
+    return (
+      <div className="flex flex-col h-full bg-temper-bg">
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-sm text-temper-text-muted">Loading execution data...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <ReactFlowProvider>
-      <div className="flex flex-col h-full bg-[var(--temper-bg)]">
-        <WorkflowHeader onClose={onClose} isLive={isLive} />
-        <SummaryBar />
-
+    <ErrorBoundary>
+      <div className="flex flex-col h-full bg-temper-bg overflow-hidden">
+        <WorkflowHeader />
+        <WorkflowSummaryBar />
         <ViewTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          stageCount={stages.size}
-          eventCount={filteredEventCount}
-          llmCallCount={llmCalls.size}
           dagContent={
-            <ErrorBoundary>
-              <div className="relative w-full h-full">
-                <DagView />
-              </div>
-            </ErrorBoundary>
+            <ReactFlowProvider>
+              <ExecutionDAG />
+            </ReactFlowProvider>
           }
-          timelineContent={<ErrorBoundary><TimelineView /></ErrorBoundary>}
-          eventLogContent={<ErrorBoundary><EventLogPanel /></ErrorBoundary>}
-          llmCallsContent={<ErrorBoundary><LLMCallsTable /></ErrorBoundary>}
+          timelineContent={<TimelineChart />}
+          eventLogContent={<EventLogPanel />}
+          llmCallsContent={<LLMCallsTable />}
         />
-        <DetailSheet />
+
+        {selection && <DetailSheet />}
       </div>
-    </ReactFlowProvider>
+    </ErrorBoundary>
   );
 }

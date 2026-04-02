@@ -57,6 +57,10 @@ export const DAG_FIT_PADDING = 0.05;
 /* Event log limits */
 export const MAX_EVENT_LOG_SIZE = 1000;
 
+/* Timing constants */
+export const DURATION_TICK_MS = 1000;
+export const SEARCH_DEBOUNCE_MS = 300;
+
 /* Status icons (for colorblind accessibility) */
 export const STATUS_ICONS: Record<string, string> = {
   completed: '\u2713', // checkmark

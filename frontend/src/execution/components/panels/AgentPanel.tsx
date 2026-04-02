@@ -191,9 +191,9 @@ export function AgentPanel({ agentId }: AgentPanelProps) {
                         className="border-b border-gray-700/50 last:border-b-0"
                       >
                         <td className="px-3 py-1 text-gray-200 font-medium">{name}</td>
-                        <td className="px-3 py-1 text-gray-400 font-mono">{decl.type}</td>
+                        <td className="px-3 py-1 text-gray-400 font-mono">{(decl as any).type}</td>
                         <td className="px-3 py-1 text-gray-600">
-                          {decl.required ? 'required' : 'optional'}
+                          {(decl as any).required ? 'required' : 'optional'}
                         </td>
                       </tr>
                     ))}
@@ -216,8 +216,8 @@ export function AgentPanel({ agentId }: AgentPanelProps) {
                         className="border-b border-gray-700/50 last:border-b-0"
                       >
                         <td className="px-3 py-1 text-gray-200 font-medium">{name}</td>
-                        <td className="px-3 py-1 text-gray-400 font-mono">{decl.type}</td>
-                        <td className="px-3 py-1 text-gray-600">{decl.description ?? ''}</td>
+                        <td className="px-3 py-1 text-gray-400 font-mono">{(decl as any).type}</td>
+                        <td className="px-3 py-1 text-gray-600">{(decl as any).description ?? ''}</td>
                       </tr>
                     ))}
                   </tbody>

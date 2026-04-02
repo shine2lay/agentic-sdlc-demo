@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { cn } from '../../utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-const TAB_STORAGE_KEY = 'sdlc-demo-active-tab';
+const TAB_STORAGE_KEY = 'temper-active-tab';
 
 interface ViewTabsProps {
   dagContent: React.ReactNode;
@@ -17,17 +17,8 @@ interface ViewTabsProps {
 
 function CountBadge({ count }: { count?: number }) {
   if (count == null || count === 0) return null;
-  return (
-    <span className="ml-1 text-[9px] font-mono opacity-60 tabular-nums">{count}</span>
-  );
+  return <span className="ml-1 text-[9px] font-mono opacity-60 tabular-nums">{count}</span>;
 }
-
-const TABS = [
-  { value: 'dag', label: 'DAG', shortcut: '1' },
-  { value: 'timeline', label: 'Timeline', shortcut: '2' },
-  { value: 'eventlog', label: 'Event Log', shortcut: '3' },
-  { value: 'llmcalls', label: 'LLM Calls', shortcut: '4' },
-] as const;
 
 export function ViewTabs({
   dagContent,
@@ -59,39 +50,37 @@ export function ViewTabs({
   }, [activeTab]);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* Tab bar */}
-      <div className="flex items-end gap-0.5 px-4 pt-2 border-b border-gray-700/60 shrink-0 bg-gray-900/30">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.value;
-          return (
-            <button
-              key={tab.value}
-              onClick={() => handleChange(tab.value)}
-              className={cn(
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-                isActive
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600',
-              )}
-            >
-              {tab.label}
-              {tab.value === 'dag' && <CountBadge count={stageCount} />}
-              {tab.value === 'eventlog' && <CountBadge count={eventCount} />}
-              {tab.value === 'llmcalls' && <CountBadge count={llmCallCount} />}
-              <kbd className="ml-1.5 text-[9px] opacity-30 hidden sm:inline px-1 py-px rounded bg-gray-700/50 font-mono">{tab.shortcut}</kbd>
-            </button>
-          );
-        })}
-      </div>
+    <Tabs value={activeTab} onValueChange={handleChange} className="flex-1 flex flex-col min-h-0">
+      <TabsList className="mx-4 mt-2">
+        <TabsTrigger value="dag">
+          DAG <CountBadge count={stageCount} />
+        </TabsTrigger>
+        <TabsTrigger value="timeline">
+          Timeline
+        </TabsTrigger>
+        <TabsTrigger value="eventlog">
+          Event Log <CountBadge count={eventCount} />
+        </TabsTrigger>
+        <TabsTrigger value="llmcalls">
+          LLM Calls <CountBadge count={llmCallCount} />
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Tab content */}
-      <div className="flex-1 min-h-0">
-        {activeTab === 'dag' && dagContent}
-        {activeTab === 'timeline' && timelineContent}
-        {activeTab === 'eventlog' && eventLogContent}
-        {activeTab === 'llmcalls' && llmCallsContent}
-      </div>
-    </div>
+      <TabsContent value="dag" className="flex-1 min-h-0">
+        {dagContent}
+      </TabsContent>
+
+      <TabsContent value="timeline" className="flex-1 min-h-0">
+        {timelineContent}
+      </TabsContent>
+
+      <TabsContent value="eventlog" className="flex-1 min-h-0">
+        {eventLogContent}
+      </TabsContent>
+
+      <TabsContent value="llmcalls" className="flex-1 min-h-0">
+        {llmCallsContent}
+      </TabsContent>
+    </Tabs>
   );
 }

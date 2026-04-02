@@ -1,24 +1,14 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useExecutionStore } from '../../store';
-import { formatTokens, formatCost, formatDuration, formatTimestamp, cn } from '../../utils';
-import type { LLMCall } from '../../types';
+import { useExecutionStore } from '@/execution/store';
+import { formatTokens, formatCost, formatDuration, formatTimestamp, cn } from '@/lib/utils';
+import type { LLMCall } from '@/execution/types';
 
-type SortField =
-  | 'status'
-  | 'model'
-  | 'agent'
-  | 'stage'
-  | 'prompt_tokens'
-  | 'completion_tokens'
-  | 'total_tokens'
-  | 'cost'
-  | 'latency'
-  | 'start_time';
+type SortField = 'status' | 'model' | 'agent' | 'stage' | 'prompt_tokens' | 'completion_tokens' | 'total_tokens' | 'cost' | 'latency' | 'start_time';
 type SortDir = 'asc' | 'desc';
 
 const STATUS_DOT: Record<string, string> = {
   completed: 'bg-emerald-400',
-  running: 'bg-blue-400 animate-pulse',
+  running: 'bg-temper-accent animate-pulse',
   failed: 'bg-red-400',
   pending: 'bg-gray-500',
 };
@@ -34,28 +24,62 @@ function SortHeader({
   sortField,
   sortDir,
   onSort,
-  align = 'left',
 }: {
   label: string;
   field: SortField;
   sortField: SortField;
   sortDir: SortDir;
   onSort: (f: SortField) => void;
-  align?: 'left' | 'right';
 }) {
   const active = sortField === field;
   return (
     <button
       className={cn(
-        'flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider w-full',
-        align === 'right' && 'justify-end',
-        active ? 'text-blue-400' : 'text-gray-500 hover:text-gray-200',
+        'flex items-center gap-1 text-left text-[10px] font-semibold uppercase tracking-wider',
+        active ? 'text-temper-accent' : 'text-temper-text-muted hover:text-temper-text',
       )}
       onClick={() => onSort(field)}
     >
       {label}
       {active && <span>{sortDir === 'asc' ? '\u25B2' : '\u25BC'}</span>}
     </button>
+  );
+}
+
+/** Compact horizontal bar chart showing token distribution by agent. */
+function TokenDistribution({ rows }: { rows: EnrichedLLMCall[] }) {
+  const dist = useMemo(() => {
+    const map = new Map<string, { prompt: number; completion: number }>();
+    for (const r of rows) {
+      const entry = map.get(r.agentName) ?? { prompt: 0, completion: 0 };
+      entry.prompt += r.prompt_tokens ?? 0;
+      entry.completion += r.completion_tokens ?? 0;
+      map.set(r.agentName, entry);
+    }
+    const arr = Array.from(map.entries())
+      .map(([name, t]) => ({ name, ...t, total: t.prompt + t.completion }))
+      .sort((a, b) => b.total - a.total);
+    const max = arr[0]?.total || 1;
+    return { agents: arr, max };
+  }, [rows]);
+
+  if (dist.agents.length === 0) return null;
+
+  return (
+    <div className="px-4 py-1.5 border-b border-temper-border/30 shrink-0">
+      <div className="flex flex-col gap-0.5">
+        {dist.agents.map((a) => (
+          <div key={a.name} className="flex items-center gap-2 h-4">
+            <span className="text-[9px] text-temper-text-muted w-24 truncate text-right shrink-0">{a.name}</span>
+            <div className="flex-1 flex h-2.5 rounded-sm overflow-hidden bg-temper-surface/50" title={`${formatTokens(a.prompt)}p + ${formatTokens(a.completion)}c = ${formatTokens(a.total)} total`}>
+              <div className="h-full bg-temper-token-prompt" style={{ width: `${(a.prompt / dist.max) * 100}%` }} />
+              <div className="h-full bg-temper-token-completion" style={{ width: `${(a.completion / dist.max) * 100}%` }} />
+            </div>
+            <span className="text-[9px] text-temper-text-dim w-12 shrink-0 font-mono">{formatTokens(a.total)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -84,7 +108,7 @@ export function LLMCallsTable() {
     [sortField],
   );
 
-  // Build agent → stage lookup
+  // Build agent→stage lookup
   const agentStageMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const [, stage] of stages) {
@@ -95,7 +119,7 @@ export function LLMCallsTable() {
     return map;
   }, [stages]);
 
-  // Enrich LLM calls with resolved names
+  // Enrich LLM calls with resolved names + derived latency
   const enriched = useMemo((): EnrichedLLMCall[] => {
     const result: EnrichedLLMCall[] = [];
     for (const [, call] of llmCalls) {
@@ -105,7 +129,16 @@ export function LLMCallsTable() {
       const stageId = agentStageMap.get(agentId) ?? '';
       const stage = stages.get(stageId);
       const stageName = stage?.stage_name ?? stage?.name ?? stageId;
-      result.push({ ...call, agentName, stageName });
+
+      // Derive duration from timestamps when not set
+      let duration = call.duration_seconds;
+      if (duration == null && call.start_time && call.end_time) {
+        duration = (new Date(call.end_time).getTime() - new Date(call.start_time).getTime()) / 1000;
+      } else if (duration == null && call.latency_ms) {
+        duration = call.latency_ms / 1000;
+      }
+
+      result.push({ ...call, duration_seconds: duration, agentName, stageName });
     }
     return result;
   }, [llmCalls, agents, stages, agentStageMap]);
@@ -143,36 +176,16 @@ export function LLMCallsTable() {
     const sorted = [...filtered].sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
-        case 'status':
-          cmp = a.status.localeCompare(b.status);
-          break;
-        case 'model':
-          cmp = (a.model ?? '').localeCompare(b.model ?? '');
-          break;
-        case 'agent':
-          cmp = a.agentName.localeCompare(b.agentName);
-          break;
-        case 'stage':
-          cmp = a.stageName.localeCompare(b.stageName);
-          break;
-        case 'prompt_tokens':
-          cmp = (a.prompt_tokens ?? 0) - (b.prompt_tokens ?? 0);
-          break;
-        case 'completion_tokens':
-          cmp = (a.completion_tokens ?? 0) - (b.completion_tokens ?? 0);
-          break;
-        case 'total_tokens':
-          cmp = (a.total_tokens ?? 0) - (b.total_tokens ?? 0);
-          break;
-        case 'cost':
-          cmp = (a.estimated_cost_usd ?? 0) - (b.estimated_cost_usd ?? 0);
-          break;
-        case 'latency':
-          cmp = (a.duration_seconds ?? 0) - (b.duration_seconds ?? 0);
-          break;
-        case 'start_time':
-          cmp = (a.start_time ?? '').localeCompare(b.start_time ?? '');
-          break;
+        case 'status': cmp = a.status.localeCompare(b.status); break;
+        case 'model': cmp = (a.model ?? '').localeCompare(b.model ?? ''); break;
+        case 'agent': cmp = a.agentName.localeCompare(b.agentName); break;
+        case 'stage': cmp = a.stageName.localeCompare(b.stageName); break;
+        case 'prompt_tokens': cmp = (a.prompt_tokens ?? 0) - (b.prompt_tokens ?? 0); break;
+        case 'completion_tokens': cmp = (a.completion_tokens ?? 0) - (b.completion_tokens ?? 0); break;
+        case 'total_tokens': cmp = (a.total_tokens ?? 0) - (b.total_tokens ?? 0); break;
+        case 'cost': cmp = (a.estimated_cost_usd ?? 0) - (b.estimated_cost_usd ?? 0); break;
+        case 'latency': cmp = (a.duration_seconds ?? 0) - (b.duration_seconds ?? 0); break;
+        case 'start_time': cmp = (a.start_time ?? '').localeCompare(b.start_time ?? ''); break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -197,9 +210,10 @@ export function LLMCallsTable() {
 
   if (llmCalls.size === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-2 py-16">
-        <span className="text-sm font-medium">No LLM calls recorded</span>
-        <span className="text-xs text-gray-600">LLM call details appear when agents make model requests</span>
+      <div className="flex-1 flex flex-col items-center justify-center text-temper-text-muted gap-2">
+        <span className="text-2xl">&#x1F4E1;</span>
+        <span className="text-sm">No LLM calls yet</span>
+        <span className="text-xs text-temper-text-dim">LLM calls will appear as agents execute</span>
       </div>
     );
   }
@@ -207,40 +221,32 @@ export function LLMCallsTable() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-700/30 shrink-0 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-temper-border/30 shrink-0 flex-wrap">
         <select
           value={filterModel}
           onChange={(e) => setFilterModel(e.target.value)}
-          className="px-2 py-0.5 rounded text-xs bg-gray-800 border border-gray-700 text-gray-200"
+          className="px-2 py-0.5 rounded text-xs bg-temper-surface border border-temper-border text-temper-text"
         >
           <option value="">All Models</option>
-          {uniqueModels.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
+          {uniqueModels.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
         <select
           value={filterAgent}
           onChange={(e) => setFilterAgent(e.target.value)}
-          className="px-2 py-0.5 rounded text-xs bg-gray-800 border border-gray-700 text-gray-200"
+          className="px-2 py-0.5 rounded text-xs bg-temper-surface border border-temper-border text-temper-text"
         >
           <option value="">All Agents</option>
-          {uniqueAgents.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
+          {uniqueAgents.map((a) => <option key={a} value={a}>{a}</option>)}
         </select>
-        {(['completed', 'running', 'failed', 'pending'] as const).map((s) => (
+        {['completed', 'running', 'failed', 'pending'].map((s) => (
           <button
             key={s}
             onClick={() => setFilterStatus(filterStatus === s ? '' : s)}
             className={cn(
               'px-2 py-0.5 rounded text-xs transition-colors',
               filterStatus === s
-                ? 'bg-blue-500/20 text-blue-400'
-                : 'text-gray-500 hover:text-gray-200',
+                ? 'bg-temper-accent/20 text-temper-accent'
+                : 'text-temper-text-muted hover:text-temper-text',
             )}
           >
             {s}
@@ -251,102 +257,52 @@ export function LLMCallsTable() {
           placeholder="Search..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          className="px-2 py-0.5 rounded text-xs bg-gray-800 border border-gray-700 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full sm:w-36"
+          className="px-2 py-0.5 rounded text-xs bg-temper-surface border border-temper-border text-temper-text placeholder:text-temper-text-dim focus:outline-none focus:ring-1 focus:ring-temper-accent w-full sm:w-36"
         />
-        <span className="ml-auto text-xs text-gray-500">
+        <span className="ml-auto text-xs text-temper-text-muted">
           {rows.length}/{enriched.length} calls
         </span>
       </div>
 
+      {/* Token distribution by agent */}
+      <TokenDistribution rows={rows} />
+
       {/* Table */}
       <div className="flex-1 overflow-auto min-h-0 px-4 py-2">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-gray-950 z-10">
-            <tr className="border-b border-gray-700/30">
-              <th className="py-1.5 px-2 text-left">
-                <SortHeader label="" field="status" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-              </th>
-              <th className="py-1.5 px-2 text-left">
-                <SortHeader label="Model" field="model" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-              </th>
-              <th className="py-1.5 px-2 text-left">
-                <SortHeader label="Agent" field="agent" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-              </th>
-              <th className="py-1.5 px-2 text-left">
-                <SortHeader label="Stage" field="stage" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-              </th>
-              <th className="py-1.5 px-2 text-right">
-                <SortHeader label="Prompt" field="prompt_tokens" sortField={sortField} sortDir={sortDir} onSort={handleSort} align="right" />
-              </th>
-              <th className="py-1.5 px-2 text-right">
-                <SortHeader label="Comp" field="completion_tokens" sortField={sortField} sortDir={sortDir} onSort={handleSort} align="right" />
-              </th>
-              <th className="py-1.5 px-2 text-right">
-                <SortHeader label="Total" field="total_tokens" sortField={sortField} sortDir={sortDir} onSort={handleSort} align="right" />
-              </th>
-              <th className="py-1.5 px-2 text-right">
-                <SortHeader label="Cost" field="cost" sortField={sortField} sortDir={sortDir} onSort={handleSort} align="right" />
-              </th>
-              <th className="py-1.5 px-2 text-right">
-                <SortHeader label="Latency" field="latency" sortField={sortField} sortDir={sortDir} onSort={handleSort} align="right" />
-              </th>
-              <th className="py-1.5 px-2 text-right">
-                <SortHeader label="Time" field="start_time" sortField={sortField} sortDir={sortDir} onSort={handleSort} align="right" />
-              </th>
+          <thead className="sticky top-0 bg-temper-bg z-10">
+            <tr className="border-b border-temper-border/30">
+              <th className="py-1.5 px-2 text-left"><SortHeader label="" field="status" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-left"><SortHeader label="Model" field="model" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-left"><SortHeader label="Agent" field="agent" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-left"><SortHeader label="Stage" field="stage" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-right"><SortHeader label="Prompt" field="prompt_tokens" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-right"><SortHeader label="Comp" field="completion_tokens" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-right"><SortHeader label="Total" field="total_tokens" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-right"><SortHeader label="Cost" field="cost" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-right"><SortHeader label="Latency" field="latency" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
+              <th className="py-1.5 px-2 text-right"><SortHeader label="Time" field="start_time" sortField={sortField} sortDir={sortDir} onSort={handleSort} /></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((call) => (
               <tr
                 key={call.id}
-                className="border-b border-gray-700/20 hover:bg-gray-800/50 cursor-pointer transition-colors"
+                className="border-b border-temper-border/20 hover:bg-temper-surface/50 cursor-pointer transition-colors"
                 onClick={() => select('llmCall', call.id)}
               >
                 <td className="py-1.5 px-2">
-                  <span
-                    className={cn(
-                      'w-2 h-2 rounded-full inline-block',
-                      STATUS_DOT[call.status] ?? STATUS_DOT.pending,
-                    )}
-                    title={call.status}
-                  />
+                  <span className={cn('w-2 h-2 rounded-full inline-block', STATUS_DOT[call.status] ?? STATUS_DOT.pending)} title={call.status} />
                 </td>
-                <td
-                  className="py-1.5 px-2 text-gray-200 font-mono truncate max-w-[120px]"
-                  title={call.model ?? '-'}
-                >
-                  {call.model ?? '-'}
-                </td>
-                <td
-                  className="py-1.5 px-2 text-gray-200 truncate max-w-[120px]"
-                  title={call.agentName}
-                >
-                  {call.agentName}
-                </td>
-                <td
-                  className="py-1.5 px-2 text-gray-500 truncate max-w-[100px]"
-                  title={call.stageName}
-                >
-                  {call.stageName}
-                </td>
-                <td className="py-1.5 px-2 text-right text-gray-500 font-mono">
-                  {formatTokens(call.prompt_tokens)}
-                </td>
-                <td className="py-1.5 px-2 text-right text-gray-500 font-mono">
-                  {formatTokens(call.completion_tokens)}
-                </td>
-                <td className="py-1.5 px-2 text-right text-gray-200 font-mono">
-                  {formatTokens(call.total_tokens)}
-                </td>
-                <td className="py-1.5 px-2 text-right text-emerald-400 font-mono">
-                  {formatCost(call.estimated_cost_usd)}
-                </td>
-                <td className="py-1.5 px-2 text-right text-gray-500 font-mono">
-                  {formatDuration(call.duration_seconds)}
-                </td>
-                <td className="py-1.5 px-2 text-right text-gray-600 font-mono">
-                  {formatTimestamp(call.start_time)}
-                </td>
+                <td className="py-1.5 px-2 text-temper-text font-mono truncate max-w-[120px]" title={call.model ?? '-'}>{call.model ?? '-'}</td>
+                <td className="py-1.5 px-2 text-temper-text truncate max-w-[120px]" title={call.agentName}>{call.agentName}</td>
+                <td className="py-1.5 px-2 text-temper-text-muted truncate max-w-[100px]" title={call.stageName}>{call.stageName}</td>
+                <td className="py-1.5 px-2 text-right text-temper-text-muted font-mono">{formatTokens(call.prompt_tokens)}</td>
+                <td className="py-1.5 px-2 text-right text-temper-text-muted font-mono">{formatTokens(call.completion_tokens)}</td>
+                <td className="py-1.5 px-2 text-right text-temper-text font-mono">{formatTokens(call.total_tokens)}</td>
+                <td className="py-1.5 px-2 text-right text-emerald-400 font-mono">{formatCost(call.estimated_cost_usd)}</td>
+                <td className="py-1.5 px-2 text-right text-temper-text-muted font-mono">{formatDuration(call.duration_seconds)}</td>
+                <td className="py-1.5 px-2 text-right text-temper-text-dim font-mono">{formatTimestamp(call.start_time)}</td>
               </tr>
             ))}
           </tbody>
@@ -354,7 +310,7 @@ export function LLMCallsTable() {
       </div>
 
       {/* Summary row */}
-      <div className="flex items-center gap-6 px-4 py-2 border-t border-gray-700/30 text-xs text-gray-500 shrink-0 bg-gray-900/50">
+      <div className="flex items-center gap-6 px-4 py-2 border-t border-temper-border/30 text-xs text-temper-text-muted shrink-0 bg-temper-panel/50">
         <span>{summary.count} calls</span>
         <span>{formatTokens(summary.totalTokens)} total tokens</span>
         <span className="text-emerald-400">{formatCost(summary.totalCost)} total cost</span>

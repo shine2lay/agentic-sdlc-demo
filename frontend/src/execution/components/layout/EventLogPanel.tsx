@@ -1,16 +1,16 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { useExecutionStore } from '../../store';
-import { formatTimestamp, cn } from '../../utils';
-import type { SelectionType } from '../../types';
-
-const SEARCH_DEBOUNCE_MS = 300;
+import { useExecutionStore } from '@/execution/store';
+import { Badge } from '@/components/ui/badge';
+import { formatTimestamp, cn } from '@/lib/utils';
+import { SEARCH_DEBOUNCE_MS } from '@/execution/constants';
+import type { SelectionType } from '@/execution/types';
 
 const EVENT_TYPE_STYLES: Record<string, string> = {
-  stage: 'bg-[#42a5f5]/20 text-[#42a5f5] border border-[#42a5f5]/30',
-  agent: 'bg-[#66bb6a]/20 text-[#66bb6a] border border-[#66bb6a]/30',
-  llm: 'bg-[#ab47bc]/20 text-[#ab47bc] border border-[#ab47bc]/30',
-  tool: 'bg-[#ffa726]/20 text-[#ffa726] border border-[#ffa726]/30',
-  workflow: 'bg-[#4fc3f7]/20 text-[#4fc3f7] border border-[#4fc3f7]/30',
+  stage: 'bg-[#42a5f5]/20 text-[#42a5f5] border-[#42a5f5]/30',
+  agent: 'bg-[#66bb6a]/20 text-[#66bb6a] border-[#66bb6a]/30',
+  llm: 'bg-[#ab47bc]/20 text-[#ab47bc] border-[#ab47bc]/30',
+  tool: 'bg-[#ffa726]/20 text-[#ffa726] border-[#ffa726]/30',
+  workflow: 'bg-[#4fc3f7]/20 text-[#4fc3f7] border-[#4fc3f7]/30',
 };
 
 const FILTER_CATEGORIES = ['all', 'workflow', 'stage', 'agent', 'llm', 'tool'] as const;
@@ -75,8 +75,15 @@ export function EventLogPanel() {
     if (atBottom) setNewEvents(0);
   }, []);
 
-  // Auto-scroll only when user has scrolled to the bottom themselves
+  // Auto-scroll to bottom on first load, then only when user is already at bottom
+  const initialScrollDone = useRef(false);
   useEffect(() => {
+    if (!initialScrollDone.current && eventLog.length > 0) {
+      initialScrollDone.current = true;
+      bottomRef.current?.scrollIntoView();
+      setIsAtBottom(true);
+      return;
+    }
     if (isAtBottom) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     } else {
@@ -130,10 +137,10 @@ export function EventLogPanel() {
 
   if (eventLog.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-2">
+      <div className="flex-1 flex flex-col items-center justify-center text-temper-text-muted gap-2">
         <span className="text-2xl">&#x1F4CB;</span>
-        <span className="text-sm">No events yet</span>
-        <span className="text-xs text-gray-600">Events will appear here as the workflow executes</span>
+        <span className="text-sm">Waiting for workflow events...</span>
+        <span className="text-xs text-temper-text-dim">Events will appear here as the workflow executes</span>
       </div>
     );
   }
@@ -141,7 +148,7 @@ export function EventLogPanel() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Filter chips + search */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-700/30 shrink-0 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-temper-border/30 shrink-0 flex-wrap">
         {FILTER_CATEGORIES.map((f) => (
           <button
             key={f}
@@ -149,8 +156,8 @@ export function EventLogPanel() {
             className={cn(
               'px-2 py-0.5 rounded text-xs transition-colors',
               filter === f || (f === 'all' && !filter)
-                ? 'bg-blue-500/20 text-blue-400'
-                : 'text-gray-500 hover:text-gray-200',
+                ? 'bg-temper-accent/20 text-temper-accent'
+                : 'text-temper-text-muted hover:text-temper-text',
             )}
           >
             {f}
@@ -164,9 +171,9 @@ export function EventLogPanel() {
           placeholder="Search events..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="px-2 py-0.5 rounded text-xs bg-gray-800 border border-gray-700 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full sm:w-40"
+          className="px-2 py-0.5 rounded text-xs bg-temper-surface border border-temper-border text-temper-text placeholder:text-temper-text-dim focus:outline-none focus:ring-1 focus:ring-temper-accent w-full sm:w-40"
         />
-        <span className="ml-auto text-xs text-gray-500" aria-live="polite">
+        <span className="ml-auto text-xs text-temper-text-muted" aria-live="polite">
           {filtered.length} events
         </span>
       </div>
@@ -182,7 +189,7 @@ export function EventLogPanel() {
         {!isAtBottom && newEvents > 0 && (
           <button
             onClick={scrollToBottom}
-            className="sticky top-0 z-20 w-full bg-blue-500/10 border-b border-blue-500/30 px-3 py-1 text-xs text-blue-400 text-center hover:bg-blue-500/20 transition-colors"
+            className="sticky top-0 z-20 w-full bg-temper-accent/10 border-b border-temper-accent/30 px-3 py-1 text-xs text-temper-accent text-center hover:bg-temper-accent/20 transition-colors"
           >
             {newEvents} new event{newEvents !== 1 ? 's' : ''} below
           </button>
@@ -193,26 +200,22 @@ export function EventLogPanel() {
             <div
               key={idx}
               className={cn(
-                'flex items-center gap-3 py-1 text-sm border-b border-gray-700/30 last:border-0',
-                sel && 'cursor-pointer hover:bg-gray-800/50',
+                'flex items-center gap-3 py-1 text-sm border-b border-temper-border/30 last:border-0',
+                sel && 'cursor-pointer hover:bg-temper-accent/10 hover:border-temper-accent/20 transition-colors',
               )}
               onClick={sel ? () => handleClick(entry.event_type, entry.data) : undefined}
               onKeyDown={sel ? (e) => handleKeyActivate(e, entry.event_type, entry.data) : undefined}
               role={sel ? 'button' : undefined}
               tabIndex={sel ? 0 : undefined}
             >
-              <span className="font-mono text-xs text-gray-500 shrink-0 w-28">
+              <span className="font-mono text-xs text-temper-text-muted shrink-0 w-28">
                 {formatTimestamp(entry.timestamp)}
               </span>
-              <span
-                className={cn(
-                  'inline-flex items-center px-1.5 py-0.5 rounded text-xs shrink-0',
-                  eventStyle(entry.event_type),
-                )}
-              >
+              <Badge variant="outline" className={`text-xs shrink-0 ${eventStyle(entry.event_type)}`}>
                 {entry.event_type}
-              </span>
-              <span className="text-gray-300 truncate">{entry.label}</span>
+              </Badge>
+              <span className={cn('truncate', sel ? 'text-temper-text hover:text-temper-accent' : 'text-temper-text')}>{entry.label}</span>
+              {sel && <span className="text-temper-text-dim text-[10px] shrink-0 ml-auto">&rarr;</span>}
             </div>
           );
         })}

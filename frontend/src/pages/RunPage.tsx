@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { fetchRun } from '../api';
-import { ExecutionView } from '../execution/ExecutionView';
+import ExecutionView from '../execution/ExecutionView';
 import type { WorkflowExecution } from '../execution/types';
 
 const POLL_INTERVAL_MS = 5000;

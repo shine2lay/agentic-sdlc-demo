@@ -35,13 +35,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center gap-3">
-          <p className="text-sm font-medium text-red-400">Something went wrong</p>
-          <p className="text-xs text-gray-500 max-w-md break-words">
+          <p className="text-sm font-medium text-temper-failed">Something went wrong</p>
+          <p className="text-xs text-temper-text-muted max-w-md break-words">
             {this.state.error?.message ?? 'Unknown error'}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-3 py-1.5 rounded text-xs bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
+            className="px-3 py-1.5 rounded text-xs bg-temper-surface text-temper-text hover:bg-temper-panel-light transition-colors"
           >
             Try again
           </button>

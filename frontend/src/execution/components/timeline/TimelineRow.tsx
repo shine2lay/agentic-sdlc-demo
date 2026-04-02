@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { TIMELINE } from './constants';
-import { formatDuration, formatTimestamp, elapsedSeconds } from '../../utils';
-import type { TimelineRow as TimelineRowData } from './useTimelineData';
+import { formatDuration, formatTimestamp, elapsedSeconds } from '@/lib/utils';
+import type { TimelineRow as TimelineRowData } from '@/execution/hooks/useTimelineData';
 
 interface TimelineRowProps {
   row: TimelineRowData;
@@ -48,19 +48,11 @@ function BarDurationLabel({ row }: { row: TimelineRowData }) {
   }, [isRunning, row.startTime]);
 
   if (isRunning) {
-    return (
-      <span className="text-[9px] font-mono text-white/90 whitespace-nowrap px-1">
-        {formatDuration(elapsed)}
-      </span>
-    );
+    return <span className="text-[9px] font-mono text-white/90 whitespace-nowrap px-1">{formatDuration(elapsed)}</span>;
   }
   if (row.endTime !== null && row.startTime !== null) {
     const durSec = (row.endTime - row.startTime) / 1000;
-    return (
-      <span className="text-[9px] font-mono text-white/90 whitespace-nowrap px-1">
-        {formatDuration(durSec)}
-      </span>
-    );
+    return <span className="text-[9px] font-mono text-white/90 whitespace-nowrap px-1">{formatDuration(durSec)}</span>;
   }
   return null;
 }
@@ -88,28 +80,22 @@ export function TimelineRow({
 
   if (row.startTime !== null && duration > 0) {
     barLeft = ((row.startTime - start) / duration) * chartWidth;
-    const barEnd =
-      row.endTime !== null
-        ? ((row.endTime - start) / duration) * chartWidth
-        : isRunning
-          ? ((now - start) / duration) * chartWidth
-          : barLeft + TIMELINE.MIN_BAR_WIDTH;
+    const barEnd = row.endTime !== null
+      ? ((row.endTime - start) / duration) * chartWidth
+      : isRunning
+        ? ((now - start) / duration) * chartWidth
+        : barLeft + TIMELINE.MIN_BAR_WIDTH;
     barWidth = Math.max(barEnd - barLeft, TIMELINE.MIN_BAR_WIDTH);
   }
 
-  const fontWeight =
-    row.level === 'workflow'
-      ? 'font-semibold'
-      : row.level === 'stage'
-        ? 'font-medium'
-        : '';
+  const fontWeight = row.level === 'workflow' ? 'font-semibold' : row.level === 'stage' ? 'font-medium' : '';
   const fontSize = row.level === 'agent' ? 'text-[11px]' : 'text-xs';
 
   return (
     <div
       role="row"
       aria-label={`${row.level}: ${row.label}, status: ${row.status}`}
-      className={`flex items-stretch border-b border-gray-700/30 hover:bg-gray-800/30${onClick ? ' cursor-pointer' : ''}`}
+      className={`flex items-stretch border-b border-temper-border/30 hover:bg-temper-surface/30${onClick ? ' cursor-pointer' : ''}`}
       style={{ height: TIMELINE.ROW_HEIGHT }}
       onClick={onClick}
     >
@@ -121,11 +107,8 @@ export function TimelineRow({
         {/* Collapse toggle */}
         {row.hasChildren ? (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-            }}
-            className="w-4 h-4 flex items-center justify-center text-gray-500 hover:text-gray-300 shrink-0 mr-1"
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            className="w-4 h-4 flex items-center justify-center text-temper-text-muted hover:text-temper-text shrink-0 mr-1"
             aria-expanded={!isCollapsed}
             aria-label="Toggle children"
           >
@@ -139,7 +122,7 @@ export function TimelineRow({
           <span className="w-4 mr-1 shrink-0" />
         )}
 
-        <span className={`truncate text-gray-300 ${fontSize} ${fontWeight}`}>
+        <span className={`truncate text-temper-text ${fontSize} ${fontWeight}`}>
           {row.label}
         </span>
       </div>

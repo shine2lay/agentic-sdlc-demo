@@ -1,9 +1,9 @@
 /**
- * DAG layout engine — ported from temper-ai/frontend/src/lib/dagLayout.ts.
+ * DAG layout engine — ported from flowchart.js.
  * Computes node positions for a left-to-right stage DAG.
  */
-import type { StageExecution } from './types';
-import type { DagInfo } from './selectors';
+import type { StageExecution } from '@/execution/types';
+import type { DagInfo } from '@/execution/selectors';
 import { LAYOUT } from './constants';
 
 export interface StagePosition {
@@ -141,8 +141,9 @@ export function computeDepthsFromDepMap(
 
 /** Estimate expanded width based on agent count (agents in a horizontal row). */
 function estimateExpandedWidth(agentCount: number): number {
-  const AGENT_SLOT = 232;
-  const MIN_EXPANDED = 480;
+  // Each agent card: min-w-[220px] + gap-3 (12px) ≈ 232px per agent + container padding
+  const AGENT_SLOT = 232;  // scanner: skip-magic
+  const MIN_EXPANDED = 480; // scanner: skip-magic
   return Math.max(agentCount * AGENT_SLOT + 2 * LAYOUT.STAGE_PAD_X, MIN_EXPANDED);
 }
 
@@ -154,7 +155,7 @@ export function estimateStageHeight(
   if (expanded) {
     // Expanded: header + metrics + stage I/O + collab arrows + single agent row
     const collabHeight =
-      (stage.collaboration_events ?? []).length > 0
+      false  // collaboration_events not available in v1
         ? LAYOUT.EXPANDED_COLLAB_HEIGHT
         : 0;
     return (

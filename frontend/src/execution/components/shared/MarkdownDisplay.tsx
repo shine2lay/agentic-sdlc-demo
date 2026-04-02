@@ -1,26 +1,25 @@
-import { cn } from '../../utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { cn } from '@/lib/utils';
 
 interface MarkdownDisplayProps {
   content: string;
   className?: string;
 }
 
-/**
- * Renders text content with basic Markdown-like formatting using plain HTML.
- * This is a lightweight alternative to react-markdown — it handles the most
- * common patterns (code blocks, bold, inline code, bullet lists) without deps.
- */
 export function MarkdownDisplay({ content, className }: MarkdownDisplayProps) {
   return (
     <div
       className={cn(
-        'rounded-md bg-gray-800 p-4 text-sm text-gray-200 border border-gray-700',
+        'rounded-md bg-temper-panel p-4 text-sm text-temper-text',
+        'border border-temper-border prose prose-invert prose-sm max-w-none',
+        'prose-headings:text-temper-text prose-p:text-temper-text prose-li:text-temper-text',
+        'prose-strong:text-temper-text prose-code:text-temper-accent prose-code:text-xs',
+        'prose-pre:bg-temper-surface prose-pre:border prose-pre:border-temper-border',
         className,
       )}
     >
-      <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-gray-200">
-        {content}
-      </pre>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
 }
