@@ -134,6 +134,56 @@ function _buildSnapshotEvents(workflow: WorkflowExecution): EventLogEntry[] {
   return events;
 }
 
+/**
+ * Normalize a v0.1 API response into the shape the store expects.
+ *
+ * v0.1 returns `nodes` (with `name`, `type`, `strategy`, `agent`/`agents`).
+ * The store and components expect `stages` (with `stage_name`, `stage_config_snapshot`).
+ * This function bridges the gap so we don't touch every component.
+ */
+function _normalizeWorkflow(raw: WorkflowExecution): WorkflowExecution {
+  // If already has stages (old format), return as-is
+  if (raw.stages?.length) return raw;
+
+  // v0.1 format: has `nodes` instead of `stages`
+  const nodes = (raw as any).nodes as any[] | undefined;
+  if (!nodes?.length) return raw;
+
+  const stages: StageExecution[] = nodes.map((node: any) => {
+    // Combine agent and agents into a single agents array
+    const agents: AgentExecution[] = [];
+    if (node.agent) agents.push(node.agent);
+    if (node.agents) agents.push(...node.agents);
+
+    // Map child_nodes recursively (for nested stages)
+    // Each child node's agents get flattened into this stage
+    if (node.child_nodes) {
+      for (const child of node.child_nodes) {
+        if (child.agent) agents.push(child.agent);
+        if (child.agents) agents.push(...child.agents);
+      }
+    }
+
+    return {
+      id: node.id,
+      stage_name: node.name,
+      name: node.name,
+      status: node.status,
+      start_time: node.start_time,
+      end_time: node.end_time,
+      duration_seconds: node.duration_seconds,
+      stage_type: node.type,
+      agents,
+      error_message: node.error_message,
+      stage_config_snapshot: node.strategy
+        ? { stage: { collaboration: { strategy: node.strategy } } }
+        : undefined,
+    } as StageExecution;
+  });
+
+  return { ...raw, stages };
+}
+
 export const useExecutionStore = create<ExecutionState>()(
   immer((set) => ({
     workflow: null,
@@ -146,8 +196,10 @@ export const useExecutionStore = create<ExecutionState>()(
     expandedStages: new Set(),
     stageDetailId: null,
 
-    applySnapshot: (workflow) =>
+    applySnapshot: (raw) =>
       set((state) => {
+        const workflow = _normalizeWorkflow(raw);
+
         // Clear selection when a new workflow loads to avoid stale selection state
         state.selection = null;
 

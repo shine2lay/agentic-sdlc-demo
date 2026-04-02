@@ -10,6 +10,7 @@ export interface WorkflowExecution {
   workflow_config?: { workflow?: { stages?: StageConfig[] }; stages?: StageConfig[] };
   workflow_config_snapshot?: { workflow?: { stages?: StageConfig[] }; stages?: StageConfig[] };
   stages: StageExecution[];
+  nodes?: any[];  // v0.1 API returns nodes — normalized to stages in store
   total_tokens?: number;
   total_cost_usd?: number;
   total_llm_calls?: number;
