@@ -28,10 +28,15 @@ services:
       TEMPER_PORT: "8421"
       TEMPER_API_URL: http://localhost:8421
       TEMPER_DATABASE_URL: postgresql://temper:temper@localhost:5434/temper
-      TEMPER_DASHBOARD_TOKEN: ${TEMPER_DASHBOARD_TOKEN:-dev-token}
-      TEMPER_SAFETY_ENV: development
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://localhost:8000}
+      VLLM_MODEL: ${VLLM_MODEL:-qwen3-next}
       POLL_INTERVAL: "10"
       WORKER_ID: sdlc-docker
+      HEROKU_API_KEY: ${HEROKU_API_KEY}
+      HEROKU_APP_NAME: ${HEROKU_APP_NAME:-agentic-sdlc-demo}
+      HEROKU_GIT_URL: ${HEROKU_GIT_URL:-https://git.heroku.com/agentic-sdlc-demo.git}
+      SDLC_REPO_URL: ${SDLC_REPO_URL:-git@github.com:shine2lay/agentic-sdlc-demo.git}
+      SDLC_APP_URL: ${SDLC_APP_URL:-https://agentic-sdlc-demo-bdff250d08f2.herokuapp.com}
     volumes:
       - ${HOME}/.ssh:/root/.ssh:ro
     depends_on:

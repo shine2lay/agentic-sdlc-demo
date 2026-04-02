@@ -2,24 +2,28 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# System deps
+# System deps (git for SDLC pipeline, ssh for GitHub, curl for health checks, nodejs for MCP)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl git openssh-client \
+    curl git openssh-client nodejs npm \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /root/.ssh \
-    && ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null
+    && ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null \
+    && git config --global user.email "bot@agentic-sdlc.dev" \
+    && git config --global user.name "Agentic SDLC Bot"
 
 # Copy temper-ai source and install (from additional build context)
 COPY --from=temper pyproject.toml README.md /build/temper-ai/
 COPY --from=temper temper_ai/ /build/temper-ai/temper_ai/
-RUN pip install --no-cache-dir '/build/temper-ai[dashboard,llm-providers]' psutil && \
+RUN pip install --no-cache-dir /build/temper-ai psutil && \
     rm -rf /build
 
-# Copy workflow configs
+# Copy workflow + agent + MCP server configs
 COPY --from=temper configs/ /app/configs/
 
-# Copy poller and entrypoint
+# Copy poller, helpers, and entrypoint
 COPY scripts/worker.py /app/worker.py
+COPY scripts/parse_builds.py /tmp/sdlc_parse_builds.py
+COPY scripts/parse_build_log.py /tmp/sdlc_parse_build_log.py
 COPY scripts/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
