@@ -35,11 +35,11 @@ export function computeStagePositions(
     const isExpanded = expandedStages?.has(name) ?? false;
     const execs = stageGroups.get(name);
     const latest = execs ? execs[execs.length - 1] : undefined;
-    // Stage-type nodes (with multiple agents) need more width
-    const isStageGroup = latest?.type === 'stage' && (latest?.agents?.length ?? 0) > 1;
     if (!isExpanded) {
       const baseWidth = LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X;
-      return isStageGroup ? baseWidth + 40 : baseWidth;
+      // Stage groups have min-width 350px in useDagElements
+      const isStageGroup = latest?.type === 'stage' && (latest?.agents?.length ?? 0) > 1;
+      return isStageGroup ? Math.max(baseWidth, 350) : baseWidth;
     }
     const agentCount = execs
       ? Math.max((execs[execs.length - 1].agents ?? []).length, 1)
