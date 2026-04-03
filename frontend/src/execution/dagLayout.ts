@@ -33,8 +33,14 @@ export function computeStagePositions(
     const m = measuredSizes?.get(name);
     if (m) return m.width;
     const isExpanded = expandedStages?.has(name) ?? false;
-    if (!isExpanded) return LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X;
     const execs = stageGroups.get(name);
+    const latest = execs ? execs[execs.length - 1] : undefined;
+    // Stage-type nodes (with multiple agents) need more width
+    const isStageGroup = latest?.type === 'stage' && (latest?.agents?.length ?? 0) > 1;
+    if (!isExpanded) {
+      const baseWidth = LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X;
+      return isStageGroup ? baseWidth + 40 : baseWidth;
+    }
     const agentCount = execs
       ? Math.max((execs[execs.length - 1].agents ?? []).length, 1)
       : 1;
