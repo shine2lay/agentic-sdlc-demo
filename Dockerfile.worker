@@ -2,14 +2,19 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# System deps (git for SDLC pipeline, ssh for GitHub, curl for health checks, nodejs for MCP)
+# System deps (git, ssh, curl, nodejs, chromium for puppeteer)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git openssh-client nodejs npm \
+    chromium \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /root/.ssh \
     && ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null \
     && git config --global user.email "bot@agentic-sdlc.dev" \
     && git config --global user.name "Agentic SDLC Bot"
+
+# Tell puppeteer to use system chromium (no download needed)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Copy temper-ai source and install (from additional build context)
 COPY --from=temper pyproject.toml README.md /build/temper-ai/
