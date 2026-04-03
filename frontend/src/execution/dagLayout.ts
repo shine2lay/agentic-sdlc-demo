@@ -37,9 +37,21 @@ export function computeStagePositions(
     const latest = execs ? execs[execs.length - 1] : undefined;
     if (!isExpanded) {
       const baseWidth = LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X;
-      // Stage groups have min-width 350px in useDagElements
-      const isStageGroup = latest?.type === 'stage' && (latest?.agents?.length ?? 0) > 1;
-      return isStageGroup ? Math.max(baseWidth, 350) : baseWidth;
+      const agentCount = latest?.agents?.length ?? 0;
+      const isStageGroup = latest?.type === 'stage' && agentCount > 1;
+      if (isStageGroup) {
+        // Match useDagElements container sizing:
+        // cardW=280, pad=28, gap=30
+        const cardW = 280, pad = 28, gap = 30;
+        // Check if leader strategy (2 columns) or parallel (1 column)
+        const strategy = latest?.strategy ?? '';
+        const isLeader = strategy === 'leader';
+        const stageW = isLeader
+          ? pad * 3 + cardW * 2 + gap          // workers + leader side by side
+          : pad * 2 + cardW;                    // single column
+        return Math.max(stageW, 350);
+      }
+      return baseWidth;
     }
     const agentCount = execs
       ? Math.max((execs[execs.length - 1].agents ?? []).length, 1)
@@ -55,6 +67,20 @@ export function computeStagePositions(
     const execs = stageGroups.get(name);
     const latest = execs ? execs[execs.length - 1] : undefined;
     if (!latest) return LAYOUT.STAGE_PAD_Y + LAYOUT.STAGE_HEADER_HEIGHT + LAYOUT.STAGE_METRICS_HEIGHT + LAYOUT.AGENT_HEIGHT;
+
+    const agentCount = latest?.agents?.length ?? 0;
+    const isStageGroup = latest?.type === 'stage' && agentCount > 1;
+    if (isStageGroup && !isExpanded) {
+      // Match useDagElements container sizing
+      const cardH = 200, hdrH = 75, pad = 28, gap = 30;
+      const strategy = latest?.strategy ?? '';
+      const isLeader = strategy === 'leader';
+      const workerCount = isLeader ? agentCount - 1 : agentCount;
+      const stackH = isLeader
+        ? Math.max(workerCount * cardH + (workerCount - 1) * gap, cardH)
+        : agentCount * cardH + (agentCount - 1) * gap;
+      return Math.max(hdrH + pad + stackH + pad, 200);
+    }
     return estimateStageHeight(latest, isExpanded);
   }
 
