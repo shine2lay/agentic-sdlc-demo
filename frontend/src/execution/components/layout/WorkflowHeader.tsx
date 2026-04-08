@@ -272,15 +272,6 @@ export function WorkflowHeader() {
         )}
 
         {workflow && (
-          <Link
-            to={`/studio/${workflow.workflow_name}`}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-temper-surface text-temper-text-muted hover:text-temper-accent hover:bg-temper-accent/10 border border-temper-border transition-colors shrink-0"
-          >
-            <Pencil className="w-3 h-3" />
-            Edit in Studio
-          </Link>
-        )}
-        {workflow && (
           <button
             onClick={exportReport}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-temper-surface text-temper-text-muted hover:text-temper-accent hover:bg-temper-accent/10 border border-temper-border transition-colors shrink-0 cursor-pointer"
@@ -290,19 +281,8 @@ export function WorkflowHeader() {
             Export
           </button>
         )}
-        {workflow && !isRunning && (
-          <button
-            onClick={handleRerun}
-            disabled={rerunning}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-temper-surface text-temper-text-muted hover:text-temper-accent hover:bg-temper-accent/10 border border-temper-border transition-colors shrink-0 cursor-pointer disabled:opacity-50"
-            aria-label="Re-run this workflow with the same inputs"
-          >
-            <RotateCcw className="w-3 h-3" />
-            Re-run
-          </button>
-        )}
 
-        <div className="ml-auto flex items-center gap-2"><ThemeToggle />{wsIndicator}</div>
+        <div className="ml-auto flex items-center gap-2"><ThemeToggle /></div>
       </header>
       {taskPreview && (
         <div className="px-4 py-1 bg-temper-surface/30 border-b border-temper-border/20 text-xs text-temper-text-dim truncate shrink-0">
