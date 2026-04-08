@@ -3,15 +3,10 @@ import { useExecutionStore } from '@/execution/store';
 import { selectStageGroups } from '@/execution/selectors';
 import { formatTokens, formatCost, formatDuration } from '@/lib/utils';
 
-const PIPELINE_COLORS: Record<string, string> = {
-  completed: '#22c55e',
-  running: '#3b82f6',
-  failed: '#ef4444',
-  pending: '#6b7280',
-};
+import { STATUS_COLORS } from '@/execution/constants';
 
 function pipelineColor(status: string): string {
-  return PIPELINE_COLORS[status] ?? PIPELINE_COLORS.pending;
+  return STATUS_COLORS[status] ?? STATUS_COLORS.pending;
 }
 
 /**

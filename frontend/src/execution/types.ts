@@ -24,7 +24,7 @@ export interface WorkflowExecution {
 export interface NodeExecution {
   id: string;
   name: string;
-  type: 'agent' | 'stage';
+  type: 'agent' | 'stage' | 'delegate';
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   start_time: string | null;
   end_time: string | null;
@@ -53,6 +53,9 @@ export interface NodeExecution {
   depends_on?: string[];
   loop_to?: string;
   max_loops?: number;
+  // Delegate metadata
+  delegated_by?: string;
+  delegate_source?: string;
   // Backward compat
   collaboration_events?: CollaborationEvent[];
   stage_config_snapshot?: {
@@ -136,6 +139,8 @@ export interface LLMCall {
   estimated_cost_usd: number;
   prompt?: unknown;
   response?: string;
+  thinking?: string;
+  tool_calls?: { name: string; id?: string }[];
   error_message?: string;
   // Backward compat
   llm_call_id?: string;
@@ -152,7 +157,6 @@ export interface ToolCall {
   end_time: string | null;
   duration_seconds: number | null;
   input_params?: Record<string, unknown>;
-  input_data?: Record<string, unknown>;
   output_data?: unknown;
   approval_required?: boolean;
   error_message?: string;
@@ -178,11 +182,14 @@ export interface ToolActivity {
   startedAt: string;
   completedAt?: string;
   durationSeconds?: number;
+  args?: Record<string, unknown>;
 }
 
 export interface StreamEntry {
   content: string;
   thinking: string;
+  /** Currently streaming tool call (name + arguments as they arrive). */
+  activeToolCall: string;
   done: boolean;
   toolActivity: ToolActivity[];
 }

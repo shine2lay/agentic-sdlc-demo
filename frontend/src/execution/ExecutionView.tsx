@@ -1,8 +1,3 @@
-/**
- * ExecutionView — adapted from Temper v0.1 for props-driven data flow.
- * Receives workflow data as props from RunPage (REST polling).
- * No WebSocket, no hooks for data fetching.
- */
 import { useEffect, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useExecutionStore } from '@/execution/store';
@@ -11,14 +6,14 @@ import { WorkflowSummaryBar } from '@/execution/components/layout/WorkflowSummar
 import { ViewTabs } from '@/execution/components/layout/ViewTabs';
 import { EventLogPanel } from '@/execution/components/layout/EventLogPanel';
 import { LLMCallsTable } from '@/execution/components/layout/LLMCallsTable';
+import { CheckpointPanel } from '@/execution/components/layout/CheckpointPanel';
 import { ExecutionDAG } from '@/execution/components/dag/ExecutionDAG';
 import { TimelineChart } from '@/execution/components/timeline/TimelineChart';
 import { DetailSheet } from '@/execution/components/panels/DetailSheet';
 import { ErrorBoundary } from '@/execution/components/shared/ErrorBoundary';
-import type { WorkflowExecution } from '@/execution/types';
 
 interface ExecutionViewProps {
-  execution: WorkflowExecution;
+  execution: Record<string, unknown>;
   onClose?: () => void;
   isLive?: boolean;
 }
@@ -29,26 +24,16 @@ export default function ExecutionView({ execution }: ExecutionViewProps) {
   const selection = useExecutionStore((s) => s.selection);
   const reset = useExecutionStore((s) => s.reset);
 
-  const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('sdlc-active-tab') || 'dag';
-  });
+  const [activeTab, setActiveTab] = useState(() =>
+    localStorage.getItem('sdlc-active-tab') || 'dag'
+  );
 
-  // Apply snapshot when execution data changes
   useEffect(() => {
-    if (execution) {
-      applySnapshot(execution);
-    }
+    if (execution) applySnapshot(execution as any);
   }, [execution, applySnapshot]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => reset();
-  }, [reset]);
-
-  // Persist tab selection
-  useEffect(() => {
-    localStorage.setItem('sdlc-active-tab', activeTab);
-  }, [activeTab]);
+  useEffect(() => () => reset(), [reset]);
+  useEffect(() => { localStorage.setItem('sdlc-active-tab', activeTab); }, [activeTab]);
 
   if (!workflow) {
     return (
@@ -68,16 +53,12 @@ export default function ExecutionView({ execution }: ExecutionViewProps) {
         <ViewTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          dagContent={
-            <ReactFlowProvider>
-              <ExecutionDAG />
-            </ReactFlowProvider>
-          }
+          dagContent={<ReactFlowProvider><ExecutionDAG /></ReactFlowProvider>}
           timelineContent={<TimelineChart />}
           eventLogContent={<EventLogPanel />}
           llmCallsContent={<LLMCallsTable />}
+          checkpointContent={<CheckpointPanel onSwitchTab={setActiveTab} />}
         />
-
         {selection && <DetailSheet />}
       </div>
     </ErrorBoundary>

@@ -32,6 +32,8 @@ interface AgentCardContentProps {
   borderColor?: string;
   /** Whether this is inside a stage container (slightly different styling). */
   nested?: boolean;
+  /** Override border style (e.g., 'dashed' for delegate nodes). */
+  borderStyle?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export const AgentCardContent = memo(function AgentCardContent({
   agent,
   borderColor,
   nested = false,
+  borderStyle,
 }: AgentCardContentProps) {
   const select = useExecutionStore((s) => s.select);
   const streaming = useExecutionStore((s) => s.streamingContent.get(agent.id));
@@ -51,7 +54,8 @@ export const AgentCardContent = memo(function AgentCardContent({
   const [inputExpanded, setInputExpanded] = useState(false);
 
   const statusColor = STATUS_COLORS[agent.status] ?? STATUS_COLORS.pending;
-  const isStreaming = streaming && !streaming.done;
+  const agentDone = agent.status === 'completed' || agent.status === 'failed';
+  const isStreaming = streaming && !streaming.done && !agentDone;
   const textOutput = isStreaming ? streaming.content : agent.output ?? '';
   // Derive structured output from text if API doesn't provide it
   const derivedOutputData = useMemo(() => {
@@ -83,6 +87,9 @@ export const AgentCardContent = memo(function AgentCardContent({
 
   const isFailed = agent.status === 'failed';
   const isRunning = agent.status === 'running';
+  // Detect script agents: check config snapshot type, or infer when no LLM activity at all
+  const isScript = configSnapshot?.type === 'script'
+    || (!model && !provider && totalTokens === 0 && llmCalls === 0 && duration > 0 && !isRunning);
 
   return (
     <div
@@ -96,6 +103,7 @@ export const AgentCardContent = memo(function AgentCardContent({
       )}
       style={!nested ? {
         borderColor: isFailed ? '#ef4444' : borderColor,
+        ...(borderStyle ? { borderStyle } : {}),
         ...(isRunning && borderColor ? { '--glow-color': borderColor } as React.CSSProperties : {}),
       } : undefined}
       onClick={() => select('agent', agent.id)}
@@ -119,57 +127,87 @@ export const AgentCardContent = memo(function AgentCardContent({
           <span className="text-[9px] px-1 py-px rounded bg-blue-500/15 text-blue-400 font-medium shrink-0 animate-pulse">streaming</span>
         )}
         <span className="ml-auto flex items-center gap-1 shrink-0">
-          {model && (
-            <span className="text-[8px] px-1 py-px rounded bg-temper-surface text-temper-text-dim font-mono"
+          {isScript ? (
+            <span className="text-[9px] px-1 py-px rounded bg-amber-500/15 text-amber-400 font-medium">script</span>
+          ) : model ? (
+            <span className="text-[9px] px-1 py-px rounded bg-temper-surface text-temper-text-dim font-mono"
                   title={provider ? `${provider}/${model}` : model}>
               {provider ? `${provider}` : ''}{provider && model ? '/' : ''}{model}
             </span>
-          )}
+          ) : null}
         </span>
       </div>
 
-      {/* Dense metrics + config row */}
+      {/* Dense metrics + config row — different for script vs LLM agents */}
       <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] text-temper-text-muted flex-wrap">
-        {promptTokens > 0 && (
-          <span className="font-mono" style={{ color: 'var(--color-temper-token-prompt)' }}>{formatTokens(promptTokens)}p</span>
-        )}
-        {completionTokens > 0 && (
-          <span className="font-mono" style={{ color: 'var(--color-temper-token-completion)' }}>{formatTokens(completionTokens)}c</span>
-        )}
-        <span className="font-mono font-medium text-temper-text">{formatTokens(totalTokens)}<span className="text-temper-text-dim"> tok</span></span>
-        <span className="text-temper-border/40">|</span>
-        <span>{formatDuration(duration)}</span>
-        {showCost && (
+        {isScript ? (
           <>
+            {/* Script agent: duration + exit status, no tokens */}
+            <span className="font-mono font-medium text-temper-text">{formatDuration(duration)}</span>
+            {isFailed && agent.error_message && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                <span className="text-red-400 truncate max-w-[150px]">{agent.error_message.slice(0, 60)}</span>
+              </>
+            )}
+            {!isFailed && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                <span className="text-emerald-400">exit 0</span>
+              </>
+            )}
+            {configSnapshot?.timeout_seconds && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                <span>timeout {configSnapshot.timeout_seconds}s</span>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {/* LLM agent: tokens + cost + llm/tool calls */}
+            {promptTokens > 0 && (
+              <span className="font-mono" style={{ color: 'var(--color-temper-token-prompt)' }}>{formatTokens(promptTokens)}p</span>
+            )}
+            {completionTokens > 0 && (
+              <span className="font-mono" style={{ color: 'var(--color-temper-token-completion)' }}>{formatTokens(completionTokens)}c</span>
+            )}
+            <span className="font-mono font-medium text-temper-text">{formatTokens(totalTokens)}<span className="text-temper-text-dim"> tok</span></span>
             <span className="text-temper-border/40">|</span>
-            <span className="text-emerald-400">{formatCost(cost)}</span>
+            <span>{formatDuration(duration)}</span>
+            {showCost && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                <span className="text-emerald-400">{formatCost(cost)}</span>
+              </>
+            )}
+            {llmCalls > 0 && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                <span>{llmCalls} llm</span>
+              </>
+            )}
+            {toolCalls > 0 && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                <span className="text-amber-400">{toolCalls} tools</span>
+              </>
+            )}
+            {tools && tools.length > 0 && (
+              <>
+                <span className="text-temper-border/40">|</span>
+                {tools.map((t) => (
+                  <span key={t} className="px-1 py-px rounded bg-amber-500/10 text-amber-400 text-[9px] font-mono">{t}</span>
+                ))}
+              </>
+            )}
+            {hasMem && <span title="Memory enabled" className="text-[9px]">🧠</span>}
           </>
         )}
-        {llmCalls > 0 && (
-          <>
-            <span className="text-temper-border/40">|</span>
-            <span>{llmCalls} llm</span>
-          </>
-        )}
-        {toolCalls > 0 && (
-          <>
-            <span className="text-temper-border/40">|</span>
-            <span className="text-amber-400">{toolCalls} tools</span>
-          </>
-        )}
-        {tools && tools.length > 0 && (
-          <>
-            <span className="text-temper-border/40">|</span>
-            {tools.map((t) => (
-              <span key={t} className="px-1 py-px rounded bg-amber-500/10 text-amber-400 text-[8px] font-mono">{t}</span>
-            ))}
-          </>
-        )}
-        {hasMem && <span title="Memory enabled" className="text-[9px]">🧠</span>}
       </div>
 
-      {/* Token breakdown bar */}
-      {totalTokens > 0 && promptTokens > 0 && (
+      {/* Token breakdown bar — LLM agents only */}
+      {!isScript && totalTokens > 0 && promptTokens > 0 && (
         <div className="px-2.5 pb-1">
           <div
             className="h-1 w-full rounded-full bg-temper-surface overflow-hidden flex"
@@ -259,7 +297,7 @@ function InputSection({ data, expanded }: { data: Record<string, unknown>; expan
   const extraSources = sourcePreviews.length === 0 && !hasPrev
     ? Object.keys(data).filter(k => !knownKeys.has(k))
     : [];
-  const isWorkflowOnly = !!(sourcePreviews.length === 0 && !hasPrev && extraSources.length === 0 && task);
+  const isWorkflowOnly = sourcePreviews.length === 0 && !hasPrev && extraSources.length === 0 && task;
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -269,7 +307,7 @@ function InputSection({ data, expanded }: { data: Record<string, unknown>; expan
           {expanded ? '\u25BE' : '\u25B8'} IN
         </span>
         {isWorkflowOnly && (
-          <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">
             ← workflow input
           </span>
         )}
@@ -279,11 +317,11 @@ function InputSection({ data, expanded }: { data: Record<string, unknown>; expan
           const displayName = agentName ?? s.name;
           return (
           <span key={s.name} className="inline-flex flex-col gap-px max-w-full">
-            <span className="text-[8px] px-1.5 py-0.5 rounded-t bg-blue-500/15 text-blue-400 font-medium">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-t bg-blue-500/15 text-blue-400 font-medium">
               ← {displayName}
             </span>
             {s.preview && (
-              <span className="text-[8px] px-1.5 py-0.5 rounded-b bg-temper-surface/50 text-temper-text-dim font-mono truncate">
+              <span className="text-[9px] px-1.5 py-0.5 rounded-b bg-temper-surface/50 text-temper-text-dim font-mono truncate">
                 {s.preview}
               </span>
             )}
@@ -291,14 +329,14 @@ function InputSection({ data, expanded }: { data: Record<string, unknown>; expan
         );
         })}
         {hasPrev && (
-          <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
             ← prev agent
           </span>
         )}
         {extraSources.map((key) => {
           const agentName = stageToAgent.get(key.replace(/_output$/, ''));
           return (
-            <span key={key} className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">
+            <span key={key} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">
               ← {agentName ?? key}
             </span>
           );
@@ -378,14 +416,14 @@ function OutputSection({ output, error, expanded }: { output: string; error?: st
       <div className="flex items-center gap-1 min-w-0">
         <span className="text-[9px] font-semibold text-temper-text-muted shrink-0">{expanded ? '\u25BE' : '\u25B8'} OUT</span>
         <span className={cn(
-          'text-[8px] px-1 py-px rounded font-mono shrink-0',
+          'text-[9px] px-1 py-px rounded font-mono shrink-0',
           isJson ? 'bg-emerald-500/15 text-emerald-400' :
           isCode ? 'bg-violet-500/15 text-violet-400' :
           'bg-temper-surface text-temper-text-dim',
         )}>
           {typeLabel}
         </span>
-        <span className="text-[8px] text-temper-text-dim font-mono shrink-0">{sizeLabel}</span>
+        <span className="text-[9px] text-temper-text-dim font-mono shrink-0">{sizeLabel}</span>
         {!expanded && preview && (
           <span className="text-[9px] text-temper-text-dim truncate font-mono">{preview}</span>
         )}

@@ -33,26 +33,8 @@ export function computeStagePositions(
     const m = measuredSizes?.get(name);
     if (m) return m.width;
     const isExpanded = expandedStages?.has(name) ?? false;
+    if (!isExpanded) return LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X;
     const execs = stageGroups.get(name);
-    const latest = execs ? execs[execs.length - 1] : undefined;
-    if (!isExpanded) {
-      const baseWidth = LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X;
-      const agentCount = latest?.agents?.length ?? 0;
-      const isStageGroup = latest?.type === 'stage' && agentCount > 1;
-      if (isStageGroup) {
-        // Match useDagElements container sizing:
-        // cardW=280, pad=28, gap=30
-        const cardW = 280, pad = 28, gap = 30;
-        // Check if leader strategy (2 columns) or parallel (1 column)
-        const strategy = latest?.strategy ?? '';
-        const isLeader = strategy === 'leader';
-        const stageW = isLeader
-          ? pad * 3 + cardW * 2 + gap          // workers + leader side by side
-          : pad * 2 + cardW;                    // single column
-        return Math.max(stageW, 350);
-      }
-      return baseWidth;
-    }
     const agentCount = execs
       ? Math.max((execs[execs.length - 1].agents ?? []).length, 1)
       : 1;
@@ -67,20 +49,6 @@ export function computeStagePositions(
     const execs = stageGroups.get(name);
     const latest = execs ? execs[execs.length - 1] : undefined;
     if (!latest) return LAYOUT.STAGE_PAD_Y + LAYOUT.STAGE_HEADER_HEIGHT + LAYOUT.STAGE_METRICS_HEIGHT + LAYOUT.AGENT_HEIGHT;
-
-    const agentCount = latest?.agents?.length ?? 0;
-    const isStageGroup = latest?.type === 'stage' && agentCount > 1;
-    if (isStageGroup && !isExpanded) {
-      // Match useDagElements container sizing
-      const cardH = 200, hdrH = 75, pad = 28, gap = 30;
-      const strategy = latest?.strategy ?? '';
-      const isLeader = strategy === 'leader';
-      const workerCount = isLeader ? agentCount - 1 : agentCount;
-      const stackH = isLeader
-        ? Math.max(workerCount * cardH + (workerCount - 1) * gap, cardH)
-        : agentCount * cardH + (agentCount - 1) * gap;
-      return Math.max(hdrH + pad + stackH + pad, 200);
-    }
     return estimateStageHeight(latest, isExpanded);
   }
 
@@ -121,7 +89,15 @@ export function computeStagePositions(
     xCursor += (maxW || LAYOUT.AGENT_WIDTH + 2 * LAYOUT.STAGE_PAD_X) + LAYOUT.STAGE_GAP_X;
   }
 
-  // Assign X from depth, Y centered within each depth group
+  // Find the tallest column to use as global vertical reference
+  let maxColumnHeight = 0;
+  for (const [, names] of depthGroups) {
+    const heights = names.map((name) => getHeight(name));
+    const totalH = heights.reduce((a, b) => a + b, 0) + (names.length - 1) * LAYOUT.STAGE_GAP_Y;
+    maxColumnHeight = Math.max(maxColumnHeight, totalH);
+  }
+
+  // Assign X from depth, Y centered using the global max height so all columns align
   for (const [depth, names] of depthGroups) {
     const x = colXOffsets.get(depth) ?? 0;
     const heights = names.map((name) => getHeight(name));
@@ -129,7 +105,8 @@ export function computeStagePositions(
     const totalH =
       heights.reduce((a, b) => a + b, 0) +
       (names.length - 1) * LAYOUT.STAGE_GAP_Y;
-    let yCursor = -totalH / 2;
+    // Center this column relative to the tallest column
+    let yCursor = -maxColumnHeight / 2 + (maxColumnHeight - totalH) / 2;
     for (let i = 0; i < names.length; i++) {
       positions.set(names[i], {
         x,
@@ -200,8 +177,13 @@ export function estimateStageHeight(
       LAYOUT.AGENT_GAP_Y
     );
   }
+  // Skipped stages with no agents: minimal height
+  const agentList = stage.agents ?? [];
+  if (agentList.length === 0 && stage.status === 'skipped') {
+    return 50; // Compact "skipped" placeholder
+  }
   // Compact: agents stacked vertically
-  const agentCount = Math.max((stage.agents ?? []).length, 1);
+  const agentCount = Math.max(agentList.length, 1);
   return (
     LAYOUT.STAGE_PAD_Y +
     LAYOUT.STAGE_HEADER_HEIGHT +

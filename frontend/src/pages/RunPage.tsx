@@ -12,9 +12,9 @@ const POLL_INTERVAL_MS = 5000;
  * Only triggers a store/state update when the execution actually changed.
  */
 function execFingerprint(exec: WorkflowExecution): string {
-  const stages = exec.stages ?? [];
+  const stages = exec.nodes ?? [];
   const stageParts = stages.map(
-    (s) => `${s.stage_name}:${s.status}:${(s.agents ?? []).length}`
+    (s) => `${s.name}:${s.status}:${(s.agents ?? []).length}`
   );
   return `${exec.status}|${stages.length}|${stageParts.join(',')}`;
 }

@@ -38,6 +38,8 @@ interface ExecutionState {
   eventLog: EventLogEntry[];
   expandedStages: Set<string>;
   stageDetailId: string | null;
+  /** When set, the DAG highlights state at this checkpoint sequence. null = show current/live state. */
+  checkpointPreview: { sequence: number; completedNodes: Set<string>; failedNodes: Set<string> } | null;
 
   applySnapshot: (workflow: WorkflowExecution) => void;
   applyEvent: (msg: WSEvent) => void;
@@ -48,6 +50,7 @@ interface ExecutionState {
   toggleStageExpanded: (stageName: string) => void;
   openStageDetail: (stageId: string) => void;
   closeStageDetail: () => void;
+  setCheckpointPreview: (preview: { sequence: number; completedNodes: Set<string>; failedNodes: Set<string> } | null) => void;
 }
 
 /** Extract all agents from a node (handles both agent and stage nodes). */
@@ -161,6 +164,7 @@ export const useExecutionStore = create<ExecutionState>()(
     eventLog: [],
     expandedStages: new Set(),
     stageDetailId: null,
+    checkpointPreview: null,
 
     applySnapshot: (workflow) =>
       set((state) => {
@@ -204,6 +208,31 @@ export const useExecutionStore = create<ExecutionState>()(
             }
             for (const tool of agent.tool_calls ?? []) {
               state.toolCalls.set(tool.id, tool);
+            }
+          }
+        }
+
+        // Seed streamingContent for running agents so the LiveStreamBar
+        // shows activity even after a page refresh mid-execution.
+        if (workflow.status === 'running') {
+          for (const [agentId, agent] of state.agents) {
+            if (agent.status === 'running' && !state.streamingContent.has(agentId)) {
+              // Seed tool activity from any currently-running tool calls
+              const runningTools: ToolActivity[] = (agent.tool_calls ?? [])
+                .filter((tc) => tc.status === 'running')
+                .map((tc) => ({
+                  toolName: tc.tool_name,
+                  status: 'running' as const,
+                  startedAt: tc.start_time ?? new Date().toISOString(),
+                  args: tc.input_params,
+                }));
+              state.streamingContent.set(agentId, {
+                content: '',
+                thinking: '',
+                activeToolCall: '',
+                done: false,
+                toolActivity: runningTools,
+              });
             }
           }
         }
@@ -330,13 +359,16 @@ export const useExecutionStore = create<ExecutionState>()(
             if (!agId) break;
             let entry = state.streamingContent.get(agId);
             if (!entry) {
-              entry = { content: '', thinking: '', done: false, toolActivity: [] };
+              entry = { content: '', thinking: '', activeToolCall: '', done: false, toolActivity: [] };
               state.streamingContent.set(agId, entry);
             }
+            // Re-activate stream so the live bar shows tool calls between LLM iterations
+            entry.done = false;
             entry.toolActivity.push({
               toolName: data.tool_name as string,
               status: 'running',
               startedAt: msg.timestamp ?? new Date().toISOString(),
+              args: (data.input_params ?? data.input_data) as Record<string, unknown> | undefined,
             } satisfies ToolActivity);
             break;
           }
@@ -377,15 +409,29 @@ export const useExecutionStore = create<ExecutionState>()(
               if (!agId) continue;
               let entry = state.streamingContent.get(agId);
               if (!entry) {
-                entry = { content: '', thinking: '', done: false, toolActivity: [] };
+                entry = { content: '', thinking: '', activeToolCall: '', done: false, toolActivity: [] };
                 state.streamingContent.set(agId, entry);
               }
               if (chunk.chunk_type === 'thinking') {
                 entry.thinking += chunk.content;
+              } else if (chunk.chunk_type === 'tool_call') {
+                entry.activeToolCall += chunk.content;
               } else {
+                // Regular content — if there was an active tool call, finalize it
+                if (entry.activeToolCall) {
+                  entry.content += entry.activeToolCall + ')\n\n';
+                  entry.activeToolCall = '';
+                }
                 entry.content += chunk.content;
               }
-              if (chunk.done) entry.done = true;
+              if (chunk.done) {
+                // Finalize any pending tool call
+                if (entry.activeToolCall) {
+                  entry.content += entry.activeToolCall + ')\n\n';
+                  entry.activeToolCall = '';
+                }
+                entry.done = true;
+              }
             }
             break;
           }
@@ -437,6 +483,11 @@ export const useExecutionStore = create<ExecutionState>()(
     closeStageDetail: () =>
       set((state) => {
         state.stageDetailId = null;
+      }),
+
+    setCheckpointPreview: (preview) =>
+      set((state) => {
+        state.checkpointPreview = preview;
       }),
   })),
 );

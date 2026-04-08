@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useExecutionStore } from '@/execution/store';
 import { selectStageGroups } from '@/execution/selectors';
-import { STATUS_COLORS } from '@/lib/constants';
+import { STATUS_COLORS } from '@/execution/constants';
 import { ensureUTC } from '@/lib/utils';
 
 export interface TimelineRow {

@@ -1,4 +1,4 @@
-/* Color and layout constants for the execution detail view. */
+/* Color and layout constants for the MAF execution view. */
 
 export const STATUS_COLORS: Record<string, string> = {
   completed: 'var(--color-temper-completed)',
@@ -28,19 +28,19 @@ export const STAGE_PALETTE = [
 ];
 
 export const EDGE_COLORS = {
-  dataFlow: 'var(--color-temper-running)',
+  dataFlow: '#3b82f6',  // blue-500 — execution order / dependency edges
   loopBack: 'var(--color-temper-loop-back)',
   collaboration: 'var(--color-temper-pending)',
-  dataWire: '#10b981', // emerald-500
+  dataWire: '#10b981',  // emerald-500 — I/O data wire edges
 };
 
-/* Layout constants for the DAG */
+/* Layout constants for the DAG (matching flowchart.js) */
 export const LAYOUT = {
   AGENT_WIDTH: 220,
-  AGENT_HEIGHT: 100,
-  AGENT_GAP_Y: 12,
+  AGENT_HEIGHT: 160,  // Increased — cards include IN/OUT sections, source tags, output previews
+  AGENT_GAP_Y: 16,
   STAGE_GAP_X: 120,
-  STAGE_GAP_Y: 40,
+  STAGE_GAP_Y: 60,  // Increased to prevent overlap between stages at same depth
   STAGE_PAD_X: 20,
   STAGE_PAD_Y: 60,
   STAGE_HEADER_HEIGHT: 48,
@@ -52,13 +52,26 @@ export const LAYOUT = {
 } as const;
 
 /** DAG auto-fit padding (fraction of viewport). */
-export const DAG_FIT_PADDING = 0.05;
+export const DAG_FIT_PADDING = 0.08;
+
+/* WebSocket reconnection */
+export const WS_INITIAL_DELAY_MS = 1000;
+export const WS_MAX_DELAY_MS = 30000;
+export const WS_BACKOFF_MULTIPLIER = 2;
+export const WS_MAX_RECONNECT_ATTEMPTS = 20;
+
+/* WebSocket close codes (match backend constants) */
+export const WS_CLOSE_AUTH_FAILED = 4001;
+export const WS_CLOSE_WORKFLOW_TERMINAL = 4100;
+
+/* Polling intervals */
+export const AGENT_DETAIL_REFETCH_MS = 2000;
+export const DURATION_TICK_MS = 1000;
 
 /* Event log limits */
 export const MAX_EVENT_LOG_SIZE = 1000;
 
-/* Timing constants */
-export const DURATION_TICK_MS = 1000;
+/* Search debounce */
 export const SEARCH_DEBOUNCE_MS = 300;
 
 /* Status icons (for colorblind accessibility) */
@@ -67,4 +80,5 @@ export const STATUS_ICONS: Record<string, string> = {
   running: '\u25B6',   // play triangle
   failed: '\u2717',    // cross
   pending: '\u25CB',   // circle
+  cancelled: '\u25A0', // square stop
 };
