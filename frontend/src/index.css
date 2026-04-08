@@ -46,6 +46,23 @@
   --temper-bg-failed: #231616;
   --temper-bg-pending: #0f1729;
 
+  /* Shadcn/Radix component variables */
+  --background: #1a1a2e;
+  --foreground: #e0e0e0;
+  --card: #0f1729;
+  --card-foreground: #e0e0e0;
+  --border: #2a3a5c;
+  --input: #2a3a5c;
+  --ring: #7dd3fc;
+  --secondary: #162032;
+  --secondary-foreground: #e0e0e0;
+  --muted: #162032;
+  --muted-foreground: #8a8fa0;
+  --accent: #162032;
+  --accent-foreground: #e0e0e0;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
   color-scheme: dark;
 }
 
