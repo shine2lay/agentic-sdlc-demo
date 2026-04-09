@@ -5,18 +5,10 @@ import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
 
-function formatDuration(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined) return '';
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m ${Math.round(seconds % 60)}s`;
-  const hours = Math.floor(seconds / 3600);
-  const mins = Math.round((seconds % 3600) / 60);
-  return `${hours}h ${mins}m`;
-}
-
-function formatCost(cost: number | null | undefined): string {
-  if (cost === null || cost === undefined || cost === 0) return '';
-  return `$${cost.toFixed(2)}`;
+function formatDuration(s: number | null | undefined): string {
+  if (!s) return '';
+  if (s < 60) return `${Math.round(s)}s`;
+  return `${Math.round(s / 60)}m ${Math.round(s % 60)}s`;
 }
 
 function isClickable(run: Run): boolean {
@@ -24,105 +16,106 @@ function isClickable(run: Run): boolean {
   return !!(run as unknown as { has_result?: boolean }).has_result;
 }
 
-function getErrorCategory(error: string): string {
-  if (!error) return '';
-  const lower = error.toLowerCase();
-  if (lower.includes('duplicate') || lower.includes('semantically identical')) return 'Duplicate detected';
-  if (lower.includes('safety') || lower.includes('security') || lower.includes('malicious')) return 'Safety rejected';
-  if (lower.includes('scope') || lower.includes('complex') || lower.includes('out of scope')) return 'Out of scope';
-  if (lower.includes('content') || lower.includes('inappropriate')) return 'Content rejected';
-  return 'Rejected';
+function StatusDot({ status }: { status: string }) {
+  const c: Record<string, string> = { ok: 'bg-emerald-500', error: 'bg-red-500', loading: 'bg-gray-500' };
+  return <span className={`inline-block w-2 h-2 rounded-full ${c[status] ?? 'bg-gray-500'}`} />;
 }
 
-// ── Pipeline stages data ───────────────────────────────────
+// ── Pipeline animation ─────────────────────────────────────
 
-const PIPELINE_STAGES = [
-  { num: 1, name: 'Validate', agents: 3, type: '👑 leader', desc: 'Feasibility, safety, product fit' },
-  { num: 2, name: 'Dedup', agents: 1, type: 'single', desc: 'Check for duplicate features' },
-  { num: 3, name: 'Clone', agents: 0, type: 'script', desc: 'Clone the repository' },
-  { num: 4, name: 'Analyze', agents: 2, type: '⚡ parallel', desc: 'Code + test analysis' },
-  { num: 5, name: 'Plan', agents: 3, type: '👑 leader', desc: 'Architecture, critique, decision' },
-  { num: 6, name: 'Build', agents: 2, type: '→ sequential', desc: 'Write tests, then implement' },
-  { num: 7, name: 'Review', agents: 4, type: '👑 leader', desc: 'Syntax, tests, diff review' },
-  { num: 8, name: 'Push', agents: 0, type: 'script', desc: 'Git push + merge' },
-  { num: 9, name: 'Cleanup', agents: 0, type: 'script', desc: 'Remove temp files' },
-  { num: 10, name: 'Verify', agents: 3, type: '⚡ parallel', desc: 'Health, smoke, visual check' },
+const STAGES = ['Validate', 'Analyze', 'Plan', 'Build', 'Test', 'Review', 'Deploy', 'Verify'];
+
+function PipelineAnimation() {
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setActive(a => (a + 1) % STAGES.length), 800);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center justify-center gap-1 py-6">
+      {STAGES.map((stage, i) => (
+        <div key={stage} className="flex items-center">
+          <div className={`flex flex-col items-center transition-all duration-300 ${i <= active ? 'opacity-100' : 'opacity-30'}`}>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                i < active ? 'bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50' :
+                i === active ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] border-2 border-[var(--temper-accent)] scale-110 shadow-lg shadow-[var(--temper-accent)]/20' :
+                'bg-[var(--temper-surface)] text-[var(--temper-text-dim)] border-2 border-[var(--temper-border)]'
+              }`}
+            >
+              {i < active ? '✓' : i + 1}
+            </div>
+            <span className={`text-[10px] mt-1.5 font-medium transition-colors duration-300 ${
+              i === active ? 'text-[var(--temper-accent)]' : 'text-[var(--temper-text-dim)]'
+            }`}>
+              {stage}
+            </span>
+          </div>
+          {i < STAGES.length - 1 && (
+            <div className={`w-6 h-0.5 mx-0.5 transition-colors duration-300 ${
+              i < active ? 'bg-emerald-500/50' : 'bg-[var(--temper-border)]'
+            }`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Example suggestions ────────────────────────────────────
+
+const EXAMPLE_SUGGESTIONS = [
+  '🎨 Add a gradient banner at the top of the page that says "Powered by AI"',
+  '✨ Add a confetti animation that triggers when viewing a completed run',
+  '🌙 Add a greeting message in the header that changes based on time of day',
+  '📊 Show a mini chart on the homepage that visualizes the success rate',
+  '🎯 Add a pulsing "Live" indicator next to running suggestions',
 ];
 
-// ── Small components ───────────────────────────────────────
+// ── Cache ──────────────────────────────────────────────────
 
-function StatusDot({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    ok: 'bg-emerald-500', error: 'bg-red-500', loading: 'bg-gray-500',
-  };
-  return <span className={`inline-block w-2 h-2 rounded-full ${colors[status] ?? 'bg-gray-500'}`} />;
-}
+const CACHE_KEY = 'sdlc-runs-cache';
+function getCached(): Run[] { try { return JSON.parse(sessionStorage.getItem(CACHE_KEY) || '[]'); } catch { return []; } }
+function setCache(r: Run[]) { try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(r)); } catch {} }
 
-// ── Run list cache ─────────────────────────────────────────
-
-const RUNS_CACHE_KEY = 'sdlc-runs-cache';
-function getCachedRuns(): Run[] {
-  try { return JSON.parse(sessionStorage.getItem(RUNS_CACHE_KEY) || '[]'); } catch { return []; }
-}
-function cacheRuns(runs: Run[]) {
-  try { sessionStorage.setItem(RUNS_CACHE_KEY, JSON.stringify(runs)); } catch {}
-}
-
-// ── Main component ─────────────────────────────────────────
+// ── Main ───────────────────────────────────────────────────
 
 export function HomePage() {
   const navigate = useNavigate();
   const [health, setHealth] = useState<string>('loading');
-  const [runs, setRuns] = useState<Run[]>(getCachedRuns);
+  const [runs, setRuns] = useState<Run[]>(getCached);
   const [loading, setLoading] = useState(runs.length === 0);
   const [suggestion, setSuggestion] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
   const [filter, setFilter] = useState<'all' | 'completed' | 'failed'>('all');
-  const [showCount, setShowCount] = useState(10);
+  const [showCount, setShowCount] = useState(8);
 
   useEffect(() => {
     fetchHealth().then(() => setHealth('ok')).catch(() => setHealth('error'));
-    fetchRuns().then((data) => {
-      const r = data?.runs ?? [];
-      setRuns(r);
-      cacheRuns(r);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-
+    fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
-      fetchRuns().then((data) => {
-        const r = data?.runs ?? [];
-        setRuns(r);
-        cacheRuns(r);
-      }).catch(() => {});
+      fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Computed stats
   const stats = useMemo(() => {
     const completed = runs.filter(r => r.status === 'completed').length;
     const failed = runs.filter(r => r.status === 'failed').length;
-    const completedRuns = runs.filter(r => r.status === 'completed' && r.duration_seconds);
-    const avgDuration = completedRuns.length > 0
-      ? completedRuns.reduce((s, r) => s + (r.duration_seconds || 0), 0) / completedRuns.length
-      : 0;
-    return { total: runs.length, completed, failed, avgDuration };
+    return { total: runs.length, completed, failed };
   }, [runs]);
 
-  // Filtered runs
   const filteredRuns = useMemo(() => {
-    const filtered = filter === 'all' ? runs : runs.filter(r => r.status === filter);
-    return filtered.slice(0, showCount);
+    const f = filter === 'all' ? runs : runs.filter(r => r.status === filter);
+    return f.slice(0, showCount);
   }, [runs, filter, showCount]);
-
   const totalFiltered = filter === 'all' ? runs.length : runs.filter(r => r.status === filter).length;
 
   const handleSubmit = async () => {
     if (!suggestion.trim()) return;
     setSubmitState('submitting');
-    setSubmitMessage('');
     try {
       const result = await submitSuggestion(suggestion);
       setSubmitState('success');
@@ -137,206 +130,180 @@ export function HomePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-8 h-full overflow-auto">
+    <div className="h-full overflow-auto">
 
-      {/* ── Hero ────────────────────────────────────────── */}
-      <section className="pt-12 pb-8 text-center">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <StatusDot status={health} />
-          <span className="text-xs text-[var(--temper-text-muted)]">
-            {health === 'ok' ? 'API connected' : health === 'error' ? 'API unreachable' : 'Connecting...'}
-          </span>
-        </div>
+      {/* ── Hero ──────────────────────────────────────── */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--temper-accent)]/5 via-transparent to-transparent pointer-events-none" />
 
-        <h1 className="text-3xl font-bold tracking-tight text-[var(--temper-text)]">
-          Agentic SDLC
-        </h1>
-        <p className="text-xl text-[var(--temper-text-muted)] mt-3 max-w-2xl mx-auto">
-          From idea to deployed code in under 7 minutes.
-        </p>
-        <p className="text-base text-[var(--temper-text-dim)] mt-2 max-w-xl mx-auto leading-relaxed">
-          An autonomous AI pipeline that validates, plans, codes, tests, reviews, and deploys your feature request — no human in the loop.
-        </p>
-
-        {stats.total > 0 && (
-          <div className="flex gap-4 justify-center mt-8">
-            {[
-              { value: String(stats.completed), label: 'deployed' },
-              { value: '10', label: 'stages' },
-              { value: '21', label: 'AI agents' },
-              { value: `~${formatDuration(stats.avgDuration)}`, label: 'avg time' },
-            ].map(({ value, label }) => (
-              <div key={label} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-5 py-3">
-                <div className="text-2xl font-bold text-[var(--temper-accent)]">{value}</div>
-                <div className="text-xs text-[var(--temper-text-muted)] uppercase tracking-wide">{label}</div>
-              </div>
-            ))}
+        <div className="max-w-4xl mx-auto px-8 pt-16 pb-8 text-center relative">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <StatusDot status={health} />
+            <span className="text-xs text-[var(--temper-text-muted)]">
+              {health === 'ok' ? 'Live' : health === 'error' ? 'Offline' : '...'}
+            </span>
           </div>
-        )}
 
-        <a
-          href="#suggest"
-          className="inline-block mt-6 bg-[var(--temper-accent)] text-black rounded-lg px-6 py-2.5 text-sm font-medium hover:opacity-85 transition-opacity"
-        >
-          Try it — suggest a feature ↓
-        </a>
-      </section>
+          <h1 className="text-4xl font-bold tracking-tight text-[var(--temper-text)]">
+            Describe a change.<br />
+            <span className="text-[var(--temper-accent)]">Watch AI build it.</span>
+          </h1>
+          <p className="text-lg text-[var(--temper-text-muted)] mt-4 max-w-xl mx-auto leading-relaxed">
+            Type what you want changed on this website. AI agents will validate, plan, code, test, review, and deploy it — automatically.
+          </p>
 
-      {/* ── How It Works ────────────────────────────────── */}
-      <section className="py-8 border-t border-[var(--temper-border)]">
-        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-2">
-          How It Works
-        </div>
-        <p className="text-sm text-[var(--temper-text-dim)] mb-5">
-          You describe a feature. AI agents handle the rest.
-        </p>
+          <PipelineAnimation />
 
-        <div className="grid grid-cols-5 gap-2">
-          {PIPELINE_STAGES.map((stage, i) => (
-            <div
-              key={stage.num}
-              className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg p-2.5 relative"
-            >
-              <div className="text-[10px] text-[var(--temper-accent)] font-mono mb-0.5">{stage.num}</div>
-              <div className="text-xs font-medium text-[var(--temper-text)] leading-tight">{stage.name}</div>
-              <div className="text-[10px] text-[var(--temper-text-dim)] mt-0.5 leading-tight">{stage.desc}</div>
-              {stage.agents > 0 && (
-                <div className="text-[10px] text-[var(--temper-text-muted)] mt-1">{stage.agents} agents</div>
-              )}
-              {stage.agents === 0 && (
-                <div className="text-[10px] text-[var(--temper-text-muted)] mt-1 italic">script</div>
-              )}
-              {/* Arrow */}
-              {i < PIPELINE_STAGES.length - 1 && (
-                <span className="absolute -right-2 top-1/2 -translate-y-1/2 text-[var(--temper-border-light)] text-xs z-10">→</span>
-              )}
+          {stats.total > 0 && (
+            <div className="flex gap-8 justify-center text-center mt-2">
+              <div>
+                <div className="text-2xl font-bold text-emerald-400">{stats.completed}</div>
+                <div className="text-xs text-[var(--temper-text-dim)]">changes shipped</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-[var(--temper-text)]">8</div>
+                <div className="text-xs text-[var(--temper-text-dim)]">pipeline stages</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-[var(--temper-text)]">21</div>
+                <div className="text-xs text-[var(--temper-text-dim)]">AI agents</div>
+              </div>
             </div>
-          ))}
+          )}
         </div>
-
-        <p className="text-xs text-[var(--temper-text-dim)] mt-4">
-          Safety guardrails are built in — {stats.failed} runs have been correctly rejected for security, content, scope, or duplication.
-        </p>
       </section>
 
-      {/* ── Suggest ─────────────────────────────────────── */}
-      <section id="suggest" className="py-8 border-t border-[var(--temper-border)]">
-        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-2">
-          Try It Yourself
-        </div>
-        <p className="text-sm text-[var(--temper-text-dim)] mb-4">
-          Describe a feature and watch AI agents build, test, and deploy it in minutes.
-        </p>
+      {/* ── Suggest ───────────────────────────────────── */}
+      <section id="suggest" className="max-w-2xl mx-auto px-8 py-10">
+        <div className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-xl p-6">
+          <h2 className="text-base font-semibold text-[var(--temper-text)] mb-1">
+            What would you like to change?
+          </h2>
+          <p className="text-sm text-[var(--temper-text-dim)] mb-4">
+            Describe any visual or functional change. The AI pipeline handles the rest.
+          </p>
 
-        <div className="flex gap-3 items-end">
           <textarea
-            className="flex-1 bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-3 py-2 text-sm text-[var(--temper-text)] placeholder-[var(--temper-text-dim)] resize-y min-h-[60px] focus:outline-none focus:border-[var(--temper-accent)] transition-colors"
-            placeholder='e.g. "Add a /api/reverse endpoint that takes a text parameter and returns it reversed"'
+            className="w-full bg-[var(--temper-bg)] border border-[var(--temper-border)] rounded-lg px-4 py-3 text-sm text-[var(--temper-text)] placeholder-[var(--temper-text-dim)] resize-none focus:outline-none focus:border-[var(--temper-accent)] transition-colors"
+            placeholder='e.g. "Add a gradient banner at the top that says Powered by AI"'
             value={suggestion}
             onChange={(e) => setSuggestion(e.target.value)}
             rows={3}
             disabled={submitState === 'submitting'}
           />
-          <button
-            className="bg-[var(--temper-accent)] text-black rounded-lg px-5 py-2 text-sm font-medium whitespace-nowrap hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            onClick={handleSubmit}
-            disabled={!suggestion.trim() || submitState === 'submitting'}
-          >
-            {submitState === 'submitting' ? 'Submitting...' : 'Send Suggestion'}
-          </button>
-        </div>
 
-        <p className="text-xs text-[var(--temper-text-dim)] mt-2">
-          💡 Good suggestions: simple API endpoints with clear input/output. The pipeline handles validation, coding, testing, review, and deployment automatically.
-        </p>
-
-        {submitMessage && (
-          <div className={`mt-2 text-sm px-3 py-2 rounded-md ${submitState === 'success' ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}`}>
-            {submitMessage}
+          <div className="flex justify-between items-center mt-3">
+            <p className="text-xs text-[var(--temper-text-dim)]">
+              Changes deploy to this live site in ~7 minutes
+            </p>
+            <button
+              className="bg-[var(--temper-accent)] text-black rounded-lg px-6 py-2 text-sm font-medium hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              onClick={handleSubmit}
+              disabled={!suggestion.trim() || submitState === 'submitting'}
+            >
+              {submitState === 'submitting' ? 'Sending...' : 'Submit'}
+            </button>
           </div>
-        )}
+
+          {submitMessage && (
+            <div className={`mt-3 text-sm px-3 py-2 rounded-md ${submitState === 'success' ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}`}>
+              {submitMessage}
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-[var(--temper-border)]">
+            <p className="text-xs text-[var(--temper-text-dim)] mb-2">Try an example:</p>
+            <div className="flex flex-wrap gap-2">
+              {EXAMPLE_SUGGESTIONS.map((ex) => (
+                <button
+                  key={ex}
+                  onClick={() => setSuggestion(ex)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-[var(--temper-bg)] border border-[var(--temper-border)] text-[var(--temper-text-muted)] hover:text-[var(--temper-text)] hover:border-[var(--temper-accent)]/50 transition-colors truncate max-w-[280px]"
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* ── Runs ────────────────────────────────────────── */}
-      <section className="py-8 border-t border-[var(--temper-border)] pb-16">
-        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-3">
-          Recent Runs
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-4 mb-4 border-b border-[var(--temper-border)]">
-          {(['all', 'completed', 'failed'] as const).map((tab) => {
-            const count = tab === 'all' ? runs.length : runs.filter(r => r.status === tab).length;
-            const active = filter === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => { setFilter(tab); setShowCount(10); }}
-                className={`text-sm font-medium pb-2 transition-colors ${
-                  active
-                    ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]'
-                    : 'text-[var(--temper-text-muted)] hover:text-[var(--temper-text)]'
-                }`}
-              >
-                {tab === 'all' ? 'All' : tab === 'completed' ? '✓ Completed' : '✗ Failed'}
-                <span className="text-xs text-[var(--temper-text-dim)] ml-1">({count})</span>
-              </button>
-            );
-          })}
+      {/* ── Recent changes ────────────────────────────── */}
+      <section className="max-w-4xl mx-auto px-8 py-8 pb-16">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide">
+            Recent Changes
+          </h2>
+          <div className="flex gap-3">
+            {(['all', 'completed', 'failed'] as const).map((tab) => {
+              const count = tab === 'all' ? runs.length : runs.filter(r => r.status === tab).length;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => { setFilter(tab); setShowCount(8); }}
+                  className={`text-xs font-medium transition-colors ${
+                    filter === tab ? 'text-[var(--temper-text)]' : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)]'
+                  }`}
+                >
+                  {tab === 'all' ? `All (${count})` : tab === 'completed' ? `✓ Shipped (${count})` : `✗ Rejected (${count})`}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {loading ? (
-          <div className="flex flex-col gap-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-4 py-3">
-                <div className="skeleton h-4 w-64" />
-                <div className="skeleton h-3 w-32 mt-2" />
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg p-4 h-24">
+                <div className="skeleton h-4 w-3/4" />
+                <div className="skeleton h-3 w-1/2 mt-3" />
               </div>
             ))}
           </div>
         ) : filteredRuns.length === 0 ? (
-          <div className="text-center py-12 text-[var(--temper-text-muted)]">
-            {filter === 'all' ? 'No runs yet. Submit a suggestion to kick off the pipeline.' : `No ${filter} runs.`}
+          <div className="text-center py-16 text-[var(--temper-text-muted)]">
+            {filter === 'all' ? 'No changes yet. Submit a suggestion above!' : `No ${filter} changes.`}
           </div>
         ) : (
           <>
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {filteredRuns.map((run) => {
                 const clickable = isClickable(run);
-                const duration = formatDuration(run.duration_seconds);
-                const cost = formatCost((run as any).total_cost_usd);
                 const isCompleted = run.status === 'completed';
                 const isFailed = run.status === 'failed';
-                const borderColor = isCompleted
-                  ? 'border-l-emerald-500'
-                  : isFailed
-                  ? 'border-l-red-500'
-                  : 'border-l-blue-500';
+                const isRunning = run.status === 'running' || run.status === 'claimed';
+                const task = (run.inputs as Record<string, unknown>)?.task_description as string || run.workflow;
 
                 return (
                   <div
                     key={run.id}
-                    className={`bg-[var(--temper-surface)] border border-[var(--temper-border)] border-l-[3px] ${borderColor} rounded-lg px-4 py-3 transition-colors ${clickable ? 'cursor-pointer hover:border-[var(--temper-accent)] hover:border-l-[var(--temper-accent)]' : ''}`}
+                    className={`bg-[var(--temper-surface)] border rounded-lg p-4 transition-all ${
+                      isCompleted ? 'border-emerald-500/30 hover:border-emerald-500/60' :
+                      isFailed ? 'border-red-500/20 hover:border-red-500/40' :
+                      isRunning ? 'border-[var(--temper-accent)]/30 hover:border-[var(--temper-accent)]/60' :
+                      'border-[var(--temper-border)] hover:border-[var(--temper-accent)]/30'
+                    } ${clickable ? 'cursor-pointer' : ''}`}
                     onClick={() => clickable && navigate(`/runs/${run.id}`)}
                   >
                     <div className="flex items-start gap-2">
-                      <span className={`mt-0.5 text-sm ${isCompleted ? 'text-emerald-400' : isFailed ? 'text-red-400' : 'text-blue-400'}`}>
-                        {isCompleted ? '✓' : isFailed ? '✗' : '●'}
+                      <span className={`text-sm mt-0.5 ${
+                        isCompleted ? 'text-emerald-400' :
+                        isFailed ? 'text-red-400' :
+                        isRunning ? 'text-[var(--temper-accent)] animate-pulse' :
+                        'text-[var(--temper-text-dim)]'
+                      }`}>
+                        {isCompleted ? '✓' : isFailed ? '✗' : isRunning ? '●' : '○'}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-[var(--temper-text)] truncate font-medium">
-                          {(run.inputs as Record<string, unknown>)?.task_description as string || run.workflow}
+                        <p className="text-sm text-[var(--temper-text)] line-clamp-2 leading-snug">
+                          {task}
                         </p>
-                        <p className="text-xs text-[var(--temper-text-muted)] mt-1">
-                          {duration && <span>{duration}</span>}
-                          {duration && cost && <span className="mx-1.5">·</span>}
-                          {cost && <span>{cost}</span>}
-                          {(duration || cost) && <span className="mx-1.5">·</span>}
-                          <span>{formatTimeAgo(run.created_at)}</span>
+                        <p className="text-xs text-[var(--temper-text-dim)] mt-2">
+                          {formatDuration(run.duration_seconds)}
+                          {run.duration_seconds ? ' · ' : ''}
+                          {formatTimeAgo(run.created_at)}
                         </p>
-                        {isFailed && run.error && (
-                          <p className="text-xs text-red-400/80 mt-1">{getErrorCategory(run.error)}</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -346,8 +313,8 @@ export function HomePage() {
 
             {showCount < totalFiltered && (
               <button
-                onClick={() => setShowCount(c => c + 10)}
-                className="mt-4 w-full text-center text-sm text-[var(--temper-text-muted)] hover:text-[var(--temper-text)] py-2 border border-[var(--temper-border)] rounded-lg hover:bg-[var(--temper-surface)] transition-colors"
+                onClick={() => setShowCount(c => c + 8)}
+                className="mt-4 w-full text-center text-xs text-[var(--temper-text-muted)] hover:text-[var(--temper-text)] py-2 border border-[var(--temper-border)] rounded-lg hover:bg-[var(--temper-surface)] transition-colors"
               >
                 Show more ({totalFiltered - showCount} remaining)
               </button>
