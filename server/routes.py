@@ -70,6 +70,16 @@ def extract_total_tokens(result: dict | None) -> int | None:
     return None
 
 
+def extract_workflow_output(result: dict | None) -> dict | None:
+    """Extract workflow_output from execution result if available."""
+    if not result:
+        return None
+    execution = result.get("execution")
+    if execution and isinstance(execution, dict):
+        return execution.get("workflow_output")
+    return None
+
+
 class CreateRunRequest(BaseModel):
     workflow: str
     inputs: dict[str, Any] = {}
@@ -322,6 +332,7 @@ def list_runs(
                 "has_result": r.result is not None,
                 "duration_seconds": calculate_duration(r.started_at, r.completed_at),
                 "total_tokens": extract_total_tokens(r.get_result()),
+                "workflow_output": extract_workflow_output(r.get_result()),
             }
             for r in runs
         ],

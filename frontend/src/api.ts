@@ -62,4 +62,5 @@ export interface Run {
   has_result?: boolean;
   duration_seconds?: number | null;
   total_tokens?: number | null;
+  workflow_output?: { result?: string; reason?: string } | null;
 }

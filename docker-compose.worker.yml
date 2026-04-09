@@ -30,6 +30,8 @@ services:
       TEMPER_DATABASE_URL: postgresql://temper:temper@localhost:5434/temper
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://localhost:8000}
       VLLM_MODEL: ${VLLM_MODEL:-qwen3-next}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN}
+      CLAUDE_CODE_MODEL: ${CLAUDE_CODE_MODEL:-opus}
       POLL_INTERVAL: "10"
       WORKER_ID: sdlc-docker
       HEROKU_API_KEY: ${HEROKU_API_KEY}

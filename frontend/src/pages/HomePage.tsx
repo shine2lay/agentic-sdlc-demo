@@ -16,6 +16,19 @@ function isClickable(run: Run): boolean {
   return !!(run as unknown as { has_result?: boolean }).has_result;
 }
 
+type RunOutcome = 'deployed' | 'rejected' | 'failed' | 'running' | 'pending';
+
+function getOutcome(run: Run): RunOutcome {
+  if (run.status === 'running' || run.status === 'claimed') return 'running';
+  if (run.status === 'pending') return 'pending';
+  if (run.status === 'failed') return 'failed';
+  // Check workflow_output for business-level result
+  const wo = run.workflow_output;
+  if (wo?.result === 'REJECT' || wo?.result === 'reject') return 'rejected';
+  if (run.status === 'completed') return 'deployed';
+  return 'pending';
+}
+
 function StatusDot({ status }: { status: string }) {
   const c: Record<string, string> = { ok: 'bg-emerald-500', error: 'bg-red-500', loading: 'bg-gray-500' };
   return <span className={`inline-block w-2 h-2 rounded-full ${c[status] ?? 'bg-gray-500'}`} />;
@@ -89,7 +102,7 @@ export function HomePage() {
   const [suggestion, setSuggestion] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
-  const [filter, setFilter] = useState<'all' | 'completed' | 'failed'>('all');
+  const [filter, setFilter] = useState<'all' | 'deployed' | 'rejected' | 'failed'>('all');
   const [showCount, setShowCount] = useState(8);
 
   useEffect(() => {
@@ -102,16 +115,18 @@ export function HomePage() {
   }, []);
 
   const stats = useMemo(() => {
-    const completed = runs.filter(r => r.status === 'completed').length;
-    const failed = runs.filter(r => r.status === 'failed').length;
-    return { total: runs.length, completed, failed };
+    const outcomes = runs.map(r => getOutcome(r));
+    const deployed = outcomes.filter(o => o === 'deployed').length;
+    const rejected = outcomes.filter(o => o === 'rejected').length;
+    const failed = outcomes.filter(o => o === 'failed').length;
+    return { total: runs.length, deployed, rejected, failed };
   }, [runs]);
 
   const filteredRuns = useMemo(() => {
-    const f = filter === 'all' ? runs : runs.filter(r => r.status === filter);
+    const f = filter === 'all' ? runs : runs.filter(r => getOutcome(r) === filter);
     return f.slice(0, showCount);
   }, [runs, filter, showCount]);
-  const totalFiltered = filter === 'all' ? runs.length : runs.filter(r => r.status === filter).length;
+  const totalFiltered = filter === 'all' ? runs.length : runs.filter(r => getOutcome(r) === filter).length;
 
   const handleSubmit = async () => {
     if (!suggestion.trim()) return;
@@ -157,7 +172,7 @@ export function HomePage() {
           {stats.total > 0 && (
             <div className="flex gap-8 justify-center text-center mt-2">
               <div>
-                <div className="text-2xl font-bold text-emerald-400">{stats.completed}</div>
+                <div className="text-2xl font-bold text-emerald-400">{stats.deployed}</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">changes shipped</div>
               </div>
               <div>
@@ -235,8 +250,14 @@ export function HomePage() {
             Recent Changes
           </h2>
           <div className="flex gap-3">
-            {(['all', 'completed', 'failed'] as const).map((tab) => {
-              const count = tab === 'all' ? runs.length : runs.filter(r => r.status === tab).length;
+            {(['all', 'deployed', 'rejected', 'failed'] as const).map((tab) => {
+              const count = tab === 'all' ? runs.length : runs.filter(r => getOutcome(r) === tab).length;
+              const labels: Record<string, string> = {
+                all: `All (${count})`,
+                deployed: `✓ Shipped (${count})`,
+                rejected: `⊘ Rejected (${count})`,
+                failed: `✗ Failed (${count})`,
+              };
               return (
                 <button
                   key={tab}
@@ -245,7 +266,7 @@ export function HomePage() {
                     filter === tab ? 'text-[var(--temper-text)]' : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)]'
                   }`}
                 >
-                  {tab === 'all' ? `All (${count})` : tab === 'completed' ? `✓ Shipped (${count})` : `✗ Rejected (${count})`}
+                  {labels[tab]}
                 </button>
               );
             })}
@@ -270,35 +291,35 @@ export function HomePage() {
             <div className="grid grid-cols-2 gap-3">
               {filteredRuns.map((run) => {
                 const clickable = isClickable(run);
-                const isCompleted = run.status === 'completed';
-                const isFailed = run.status === 'failed';
-                const isRunning = run.status === 'running' || run.status === 'claimed';
+                const outcome = getOutcome(run);
                 const task = (run.inputs as Record<string, unknown>)?.task_description as string || run.workflow;
+
+                const styles: Record<RunOutcome, { border: string; icon: string; iconColor: string }> = {
+                  deployed: { border: 'border-emerald-500/30 hover:border-emerald-500/60', icon: '✓', iconColor: 'text-emerald-400' },
+                  rejected: { border: 'border-amber-500/30 hover:border-amber-500/50', icon: '⊘', iconColor: 'text-amber-400' },
+                  failed: { border: 'border-red-500/20 hover:border-red-500/40', icon: '✗', iconColor: 'text-red-400' },
+                  running: { border: 'border-[var(--temper-accent)]/30 hover:border-[var(--temper-accent)]/60', icon: '●', iconColor: 'text-[var(--temper-accent)] animate-pulse' },
+                  pending: { border: 'border-[var(--temper-border)]', icon: '○', iconColor: 'text-[var(--temper-text-dim)]' },
+                };
+                const s = styles[outcome];
 
                 return (
                   <div
                     key={run.id}
-                    className={`bg-[var(--temper-surface)] border rounded-lg p-4 transition-all ${
-                      isCompleted ? 'border-emerald-500/30 hover:border-emerald-500/60' :
-                      isFailed ? 'border-red-500/20 hover:border-red-500/40' :
-                      isRunning ? 'border-[var(--temper-accent)]/30 hover:border-[var(--temper-accent)]/60' :
-                      'border-[var(--temper-border)] hover:border-[var(--temper-accent)]/30'
-                    } ${clickable ? 'cursor-pointer' : ''}`}
+                    className={`bg-[var(--temper-surface)] border rounded-lg p-4 transition-all ${s.border} ${clickable ? 'cursor-pointer' : ''}`}
                     onClick={() => clickable && navigate(`/runs/${run.id}`)}
                   >
                     <div className="flex items-start gap-2">
-                      <span className={`text-sm mt-0.5 ${
-                        isCompleted ? 'text-emerald-400' :
-                        isFailed ? 'text-red-400' :
-                        isRunning ? 'text-[var(--temper-accent)] animate-pulse' :
-                        'text-[var(--temper-text-dim)]'
-                      }`}>
-                        {isCompleted ? '✓' : isFailed ? '✗' : isRunning ? '●' : '○'}
-                      </span>
+                      <span className={`text-sm mt-0.5 ${s.iconColor}`}>{s.icon}</span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-[var(--temper-text)] line-clamp-2 leading-snug">
                           {task}
                         </p>
+                        {outcome === 'rejected' && run.workflow_output?.reason && (
+                          <p className="text-xs text-amber-400/70 mt-1 line-clamp-1">
+                            {run.workflow_output.reason}
+                          </p>
+                        )}
                         <p className="text-xs text-[var(--temper-text-dim)] mt-2">
                           {formatDuration(run.duration_seconds)}
                           {run.duration_seconds ? ' · ' : ''}
