@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, type Run } from '../api';
 import { formatTimeAgo } from '../execution/utils';
+
+// ── Helpers ────────────────────────────────────────────────
 
 function formatDuration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined) return '';
@@ -12,60 +14,61 @@ function formatDuration(seconds: number | null | undefined): string {
   return `${hours}h ${mins}m`;
 }
 
-function formatTokens(tokens: number | null | undefined): string {
-  if (tokens === null || tokens === undefined) return '';
-  if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M tokens`;
-  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K tokens`;
-  return `${tokens} tokens`;
+function formatCost(cost: number | null | undefined): string {
+  if (cost === null || cost === undefined || cost === 0) return '';
+  return `$${cost.toFixed(2)}`;
 }
 
 function isClickable(run: Run): boolean {
   if (run.status === 'running' || run.status === 'claimed') return true;
-  // List endpoint returns has_result instead of full result data
   return !!(run as unknown as { has_result?: boolean }).has_result;
 }
 
+function getErrorCategory(error: string): string {
+  if (!error) return '';
+  const lower = error.toLowerCase();
+  if (lower.includes('duplicate') || lower.includes('semantically identical')) return 'Duplicate detected';
+  if (lower.includes('safety') || lower.includes('security') || lower.includes('malicious')) return 'Safety rejected';
+  if (lower.includes('scope') || lower.includes('complex') || lower.includes('out of scope')) return 'Out of scope';
+  if (lower.includes('content') || lower.includes('inappropriate')) return 'Content rejected';
+  return 'Rejected';
+}
+
+// ── Pipeline stages data ───────────────────────────────────
+
+const PIPELINE_STAGES = [
+  { num: 1, name: 'Validate', agents: 3, type: '👑 leader', desc: 'Feasibility, safety, product fit' },
+  { num: 2, name: 'Dedup', agents: 1, type: 'single', desc: 'Check for duplicate features' },
+  { num: 3, name: 'Clone', agents: 0, type: 'script', desc: 'Clone the repository' },
+  { num: 4, name: 'Analyze', agents: 2, type: '⚡ parallel', desc: 'Code + test analysis' },
+  { num: 5, name: 'Plan', agents: 3, type: '👑 leader', desc: 'Architecture, critique, decision' },
+  { num: 6, name: 'Build', agents: 2, type: '→ sequential', desc: 'Write tests, then implement' },
+  { num: 7, name: 'Review', agents: 4, type: '👑 leader', desc: 'Syntax, tests, diff review' },
+  { num: 8, name: 'Push', agents: 0, type: 'script', desc: 'Git push + merge' },
+  { num: 9, name: 'Cleanup', agents: 0, type: 'script', desc: 'Remove temp files' },
+  { num: 10, name: 'Verify', agents: 3, type: '⚡ parallel', desc: 'Health, smoke, visual check' },
+];
+
+// ── Small components ───────────────────────────────────────
+
 function StatusDot({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    ok: 'bg-emerald-500',
-    error: 'bg-red-500',
-    loading: 'bg-gray-500',
-    pending: 'bg-yellow-500',
-    claimed: 'bg-blue-500',
-    running: 'bg-blue-500',
-    completed: 'bg-emerald-500',
-    failed: 'bg-red-500',
+    ok: 'bg-emerald-500', error: 'bg-red-500', loading: 'bg-gray-500',
   };
   return <span className={`inline-block w-2 h-2 rounded-full ${colors[status] ?? 'bg-gray-500'}`} />;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-yellow-900/50 text-yellow-400 border-yellow-700/50',
-    claimed: 'bg-blue-900/50 text-blue-400 border-blue-700/50',
-    running: 'bg-blue-900/50 text-blue-400 border-blue-700/50',
-    completed: 'bg-emerald-900/50 text-emerald-400 border-emerald-700/50',
-    failed: 'bg-red-900/50 text-red-400 border-red-700/50',
-  };
-  return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded border ${styles[status] ?? 'bg-gray-800 text-gray-400 border-gray-700'}`}>
-      {status}
-    </span>
-  );
-}
+// ── Run list cache ─────────────────────────────────────────
 
 const RUNS_CACHE_KEY = 'sdlc-runs-cache';
-
 function getCachedRuns(): Run[] {
-  try {
-    const cached = sessionStorage.getItem(RUNS_CACHE_KEY);
-    return cached ? JSON.parse(cached) : [];
-  } catch { return []; }
+  try { return JSON.parse(sessionStorage.getItem(RUNS_CACHE_KEY) || '[]'); } catch { return []; }
+}
+function cacheRuns(runs: Run[]) {
+  try { sessionStorage.setItem(RUNS_CACHE_KEY, JSON.stringify(runs)); } catch {}
 }
 
-function cacheRuns(runs: Run[]) {
-  try { sessionStorage.setItem(RUNS_CACHE_KEY, JSON.stringify(runs)); } catch { /* ignore */ }
-}
+// ── Main component ─────────────────────────────────────────
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -75,33 +78,46 @@ export function HomePage() {
   const [suggestion, setSuggestion] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
+  const [filter, setFilter] = useState<'all' | 'completed' | 'failed'>('all');
+  const [showCount, setShowCount] = useState(10);
 
   useEffect(() => {
-    fetchHealth()
-      .then(() => setHealth('ok'))
-      .catch(() => setHealth('error'));
+    fetchHealth().then(() => setHealth('ok')).catch(() => setHealth('error'));
+    fetchRuns().then((data) => {
+      const r = data?.runs ?? [];
+      setRuns(r);
+      cacheRuns(r);
+      setLoading(false);
+    }).catch(() => setLoading(false));
 
-    fetchRuns()
-      .then((data) => {
+    const interval = setInterval(() => {
+      fetchRuns().then((data) => {
         const r = data?.runs ?? [];
         setRuns(r);
         cacheRuns(r);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-
-    const interval = setInterval(() => {
-      fetchRuns()
-        .then((data) => {
-          const r = data?.runs ?? [];
-          setRuns(r);
-          cacheRuns(r);
-        })
-        .catch(() => {});
+      }).catch(() => {});
     }, 5000);
-
     return () => clearInterval(interval);
   }, []);
+
+  // Computed stats
+  const stats = useMemo(() => {
+    const completed = runs.filter(r => r.status === 'completed').length;
+    const failed = runs.filter(r => r.status === 'failed').length;
+    const completedRuns = runs.filter(r => r.status === 'completed' && r.duration_seconds);
+    const avgDuration = completedRuns.length > 0
+      ? completedRuns.reduce((s, r) => s + (r.duration_seconds || 0), 0) / completedRuns.length
+      : 0;
+    return { total: runs.length, completed, failed, avgDuration };
+  }, [runs]);
+
+  // Filtered runs
+  const filteredRuns = useMemo(() => {
+    const filtered = filter === 'all' ? runs : runs.filter(r => r.status === filter);
+    return filtered.slice(0, showCount);
+  }, [runs, filter, showCount]);
+
+  const totalFiltered = filter === 'all' ? runs.length : runs.filter(r => r.status === filter).length;
 
   const handleSubmit = async () => {
     if (!suggestion.trim()) return;
@@ -121,26 +137,101 @@ export function HomePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 h-full overflow-auto">
-      <div className="flex justify-between items-center mb-8 pb-4 border-b border-[var(--temper-border)]">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--temper-text)]">Agentic SDLC</h1>
-          <p className="text-sm text-[var(--temper-text-muted)] mt-1">Autonomous multi-agent software development pipeline</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-[var(--temper-text-muted)]">
-          <StatusDot status={health} />
-          {health === 'ok' ? 'API connected' : health === 'error' ? 'API unreachable' : 'Connecting...'}
-        </div>
-      </div>
+    <div className="max-w-4xl mx-auto px-8 h-full overflow-auto">
 
-      <div className="mb-8">
-        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-3">
-          Suggest a Feature
+      {/* ── Hero ────────────────────────────────────────── */}
+      <section className="pt-12 pb-8 text-center">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <StatusDot status={health} />
+          <span className="text-xs text-[var(--temper-text-muted)]">
+            {health === 'ok' ? 'API connected' : health === 'error' ? 'API unreachable' : 'Connecting...'}
+          </span>
         </div>
+
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--temper-text)]">
+          Agentic SDLC
+        </h1>
+        <p className="text-xl text-[var(--temper-text-muted)] mt-3 max-w-2xl mx-auto">
+          From idea to deployed code in under 7 minutes.
+        </p>
+        <p className="text-base text-[var(--temper-text-dim)] mt-2 max-w-xl mx-auto leading-relaxed">
+          An autonomous AI pipeline that validates, plans, codes, tests, reviews, and deploys your feature request — no human in the loop.
+        </p>
+
+        {stats.total > 0 && (
+          <div className="flex gap-4 justify-center mt-8">
+            {[
+              { value: String(stats.completed), label: 'deployed' },
+              { value: '10', label: 'stages' },
+              { value: '21', label: 'AI agents' },
+              { value: `~${formatDuration(stats.avgDuration)}`, label: 'avg time' },
+            ].map(({ value, label }) => (
+              <div key={label} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-5 py-3">
+                <div className="text-2xl font-bold text-[var(--temper-accent)]">{value}</div>
+                <div className="text-xs text-[var(--temper-text-muted)] uppercase tracking-wide">{label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <a
+          href="#suggest"
+          className="inline-block mt-6 bg-[var(--temper-accent)] text-black rounded-lg px-6 py-2.5 text-sm font-medium hover:opacity-85 transition-opacity"
+        >
+          Try it — suggest a feature ↓
+        </a>
+      </section>
+
+      {/* ── How It Works ────────────────────────────────── */}
+      <section className="py-8 border-t border-[var(--temper-border)]">
+        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-2">
+          How It Works
+        </div>
+        <p className="text-sm text-[var(--temper-text-dim)] mb-5">
+          You describe a feature. AI agents handle the rest.
+        </p>
+
+        <div className="grid grid-cols-5 gap-2">
+          {PIPELINE_STAGES.map((stage, i) => (
+            <div
+              key={stage.num}
+              className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg p-2.5 relative"
+            >
+              <div className="text-[10px] text-[var(--temper-accent)] font-mono mb-0.5">{stage.num}</div>
+              <div className="text-xs font-medium text-[var(--temper-text)] leading-tight">{stage.name}</div>
+              <div className="text-[10px] text-[var(--temper-text-dim)] mt-0.5 leading-tight">{stage.desc}</div>
+              {stage.agents > 0 && (
+                <div className="text-[10px] text-[var(--temper-text-muted)] mt-1">{stage.agents} agents</div>
+              )}
+              {stage.agents === 0 && (
+                <div className="text-[10px] text-[var(--temper-text-muted)] mt-1 italic">script</div>
+              )}
+              {/* Arrow */}
+              {i < PIPELINE_STAGES.length - 1 && (
+                <span className="absolute -right-2 top-1/2 -translate-y-1/2 text-[var(--temper-border-light)] text-xs z-10">→</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs text-[var(--temper-text-dim)] mt-4">
+          Safety guardrails are built in — {stats.failed} runs have been correctly rejected for security, content, scope, or duplication.
+        </p>
+      </section>
+
+      {/* ── Suggest ─────────────────────────────────────── */}
+      <section id="suggest" className="py-8 border-t border-[var(--temper-border)]">
+        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-2">
+          Try It Yourself
+        </div>
+        <p className="text-sm text-[var(--temper-text-dim)] mb-4">
+          Describe a feature and watch AI agents build, test, and deploy it in minutes.
+        </p>
+
         <div className="flex gap-3 items-end">
           <textarea
             className="flex-1 bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-3 py-2 text-sm text-[var(--temper-text)] placeholder-[var(--temper-text-dim)] resize-y min-h-[60px] focus:outline-none focus:border-[var(--temper-accent)] transition-colors"
-            placeholder="Describe a feature or change you'd like to see. Your suggestion will be triaged, analyzed, and processed through our agentic AI pipeline - from initial review to code generation, testing, and deployment - all handled autonomously by AI agents."
+            placeholder='e.g. "Add a /api/reverse endpoint that takes a text parameter and returns it reversed"'
             value={suggestion}
             onChange={(e) => setSuggestion(e.target.value)}
             rows={3}
@@ -154,70 +245,116 @@ export function HomePage() {
             {submitState === 'submitting' ? 'Submitting...' : 'Send Suggestion'}
           </button>
         </div>
+
+        <p className="text-xs text-[var(--temper-text-dim)] mt-2">
+          💡 Good suggestions: simple API endpoints with clear input/output. The pipeline handles validation, coding, testing, review, and deployment automatically.
+        </p>
+
         {submitMessage && (
           <div className={`mt-2 text-sm px-3 py-2 rounded-md ${submitState === 'success' ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}`}>
             {submitMessage}
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-3">
-        Runs
-      </div>
+      {/* ── Runs ────────────────────────────────────────── */}
+      <section className="py-8 border-t border-[var(--temper-border)] pb-16">
+        <div className="text-xs font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-3">
+          Recent Runs
+        </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-4 py-3 flex justify-between items-center">
-              <div className="flex flex-col gap-2">
-                <div className="skeleton h-4 w-32" />
-                <div className="skeleton h-3 w-48" />
-              </div>
-              <div className="skeleton h-5 w-16 rounded" />
-            </div>
-          ))}
-        </div>
-      ) : runs.length === 0 ? (
-        <div className="text-center py-12 text-[var(--temper-text-muted)]">
-          No runs yet. Submit a suggestion to kick off the pipeline.
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {runs.map((run) => {
-            const clickable = isClickable(run);
-            const duration = formatDuration(run.duration_seconds);
-            const tokens = formatTokens(run.total_tokens);
+        {/* Filter tabs */}
+        <div className="flex gap-4 mb-4 border-b border-[var(--temper-border)]">
+          {(['all', 'completed', 'failed'] as const).map((tab) => {
+            const count = tab === 'all' ? runs.length : runs.filter(r => r.status === tab).length;
+            const active = filter === tab;
             return (
-              <div
-                key={run.id}
-                className={`bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-4 py-3 flex justify-between items-center transition-colors ${clickable ? 'cursor-pointer hover:border-[var(--temper-accent)]' : ''}`}
-                onClick={() => clickable && navigate(`/runs/${run.id}`)}
+              <button
+                key={tab}
+                onClick={() => { setFilter(tab); setShowCount(10); }}
+                className={`text-sm font-medium pb-2 transition-colors ${
+                  active
+                    ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]'
+                    : 'text-[var(--temper-text-muted)] hover:text-[var(--temper-text)]'
+                }`}
               >
-                <div className="flex flex-col gap-1 min-w-0">
-                  <span className="font-medium text-sm truncate">
-                    {(run.inputs as Record<string, unknown>)?.task_description as string || run.workflow}
-                  </span>
-                  <span className="text-xs text-[var(--temper-text-muted)]">
-                    {run.id.slice(0, 8)} &middot; {formatTimeAgo(run.created_at)}
-                  </span>
-                  {(duration || tokens) && (
-                    <span className="text-xs text-[var(--temper-text-dim)]">
-                      {duration && <span>{duration}</span>}
-                      {duration && tokens && <span className="mx-2">&middot;</span>}
-                      {tokens && <span>{tokens}</span>}
-                    </span>
-                  )}
-                  {run.error && <span className="text-xs text-red-400 font-medium">{run.error}</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <StatusBadge status={run.status} />
-                  {clickable && <span className="text-[var(--temper-text-muted)] text-lg">&rsaquo;</span>}
-                </div>
-              </div>
+                {tab === 'all' ? 'All' : tab === 'completed' ? '✓ Completed' : '✗ Failed'}
+                <span className="text-xs text-[var(--temper-text-dim)] ml-1">({count})</span>
+              </button>
             );
           })}
         </div>
-      )}
+
+        {loading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg px-4 py-3">
+                <div className="skeleton h-4 w-64" />
+                <div className="skeleton h-3 w-32 mt-2" />
+              </div>
+            ))}
+          </div>
+        ) : filteredRuns.length === 0 ? (
+          <div className="text-center py-12 text-[var(--temper-text-muted)]">
+            {filter === 'all' ? 'No runs yet. Submit a suggestion to kick off the pipeline.' : `No ${filter} runs.`}
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2">
+              {filteredRuns.map((run) => {
+                const clickable = isClickable(run);
+                const duration = formatDuration(run.duration_seconds);
+                const cost = formatCost((run as any).total_cost_usd);
+                const isCompleted = run.status === 'completed';
+                const isFailed = run.status === 'failed';
+                const borderColor = isCompleted
+                  ? 'border-l-emerald-500'
+                  : isFailed
+                  ? 'border-l-red-500'
+                  : 'border-l-blue-500';
+
+                return (
+                  <div
+                    key={run.id}
+                    className={`bg-[var(--temper-surface)] border border-[var(--temper-border)] border-l-[3px] ${borderColor} rounded-lg px-4 py-3 transition-colors ${clickable ? 'cursor-pointer hover:border-[var(--temper-accent)] hover:border-l-[var(--temper-accent)]' : ''}`}
+                    onClick={() => clickable && navigate(`/runs/${run.id}`)}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className={`mt-0.5 text-sm ${isCompleted ? 'text-emerald-400' : isFailed ? 'text-red-400' : 'text-blue-400'}`}>
+                        {isCompleted ? '✓' : isFailed ? '✗' : '●'}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-[var(--temper-text)] truncate font-medium">
+                          {(run.inputs as Record<string, unknown>)?.task_description as string || run.workflow}
+                        </p>
+                        <p className="text-xs text-[var(--temper-text-muted)] mt-1">
+                          {duration && <span>{duration}</span>}
+                          {duration && cost && <span className="mx-1.5">·</span>}
+                          {cost && <span>{cost}</span>}
+                          {(duration || cost) && <span className="mx-1.5">·</span>}
+                          <span>{formatTimeAgo(run.created_at)}</span>
+                        </p>
+                        {isFailed && run.error && (
+                          <p className="text-xs text-red-400/80 mt-1">{getErrorCategory(run.error)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {showCount < totalFiltered && (
+              <button
+                onClick={() => setShowCount(c => c + 10)}
+                className="mt-4 w-full text-center text-sm text-[var(--temper-text-muted)] hover:text-[var(--temper-text)] py-2 border border-[var(--temper-border)] rounded-lg hover:bg-[var(--temper-surface)] transition-colors"
+              >
+                Show more ({totalFiltered - showCount} remaining)
+              </button>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }

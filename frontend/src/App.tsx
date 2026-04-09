@@ -13,15 +13,13 @@ export default function App() {
       </main>
       <footer className="bg-[var(--temper-panel)] border-t border-[var(--temper-border)] text-[var(--temper-text-muted)] text-sm py-2 text-center">
         <p>
-          The code for this website is hosted at{' '}
-          <a
-            href="https://github.com/shine2lay/agentic-sdlc-demo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--temper-accent)] hover:underline"
-          >
-            GitHub
-          </a>
+          Built with{' '}
+          <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Claude</a>
+          {' · '}
+          Powered by{' '}
+          <a href="https://github.com/shine2lay/temper-ai" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Temper AI</a>
+          {' · '}
+          <a href="https://github.com/shine2lay/agentic-sdlc-demo" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Source</a>
         </p>
       </footer>
     </div>
