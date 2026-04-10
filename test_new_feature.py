@@ -1,74 +1,61 @@
-"""Acceptance tests for GET /api/status-border-config endpoint.
+"""Acceptance tests for GET /api/fade-in-config endpoint.
 
-Tests that the endpoint returns border styling config and a color mapping
-whose keys match the five outcomes from classify_run_outcome().
+Tests that the endpoint returns the correct fade-in animation configuration
+for run cards, matching the expected response shape and values.
 """
 
 import sys
-
 from fastapi.testclient import TestClient
-
 from server.app import app
 
 client = TestClient(app)
 
-EXPECTED_OUTCOME_KEYS = {"deployed", "rejected", "failed", "running", "pending"}
 
-
-def test_status_border_config_returns_valid_response():
-    """Happy path: endpoint returns 200 with correct structure and values."""
-    response = client.get("/api/status-border-config")
+def test_fade_in_config_returns_200_with_all_fields():
+    """GET /api/fade-in-config returns HTTP 200 with all six expected fields and values."""
+    response = client.get("/api/fade-in-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    assert response.headers["content-type"] == "application/json"
     data = response.json()
-
-    # Verify border styling fields
-    assert data["border_width_px"] == 3
-    assert data["border_radius_px"] == 2
-    assert data["border_side"] == "left"
-
-    # Verify colors dict has exactly the 5 outcome keys
-    colors = data["colors"]
-    assert isinstance(colors, dict), "colors should be a dict"
-    assert set(colors.keys()) == EXPECTED_OUTCOME_KEYS, (
-        f"Expected keys {EXPECTED_OUTCOME_KEYS}, got {set(colors.keys())}"
-    )
-
-    # Verify each color value is a non-empty hex string
-    for key, value in colors.items():
-        assert isinstance(value, str) and value.startswith("#"), (
-            f"Color for '{key}' should be a hex string, got {value!r}"
-        )
-
-    print("PASS: status-border-config returns valid response")
+    assert data == {
+        "duration_ms": 400,
+        "delay_ms": 0,
+        "easing": "ease-out",
+        "translate_y_px": 12,
+        "stagger_ms": 60,
+        "initial_opacity": 0.0,
+    }, f"Unexpected response body: {data}"
+    print("PASS: fade-in config returns 200 with all fields")
 
 
-def test_existing_endpoints_still_work():
-    """Regression: existing config endpoints remain functional."""
-    for path in ("/api/health", "/api/typewriter-config", "/api/dot-grid-config"):
-        response = client.get(path)
-        assert response.status_code == 200, (
-            f"Expected 200 for {path}, got {response.status_code}"
-        )
-    print("PASS: existing endpoints still return 200")
+def test_existing_endpoints_unaffected():
+    """Existing config endpoints still return HTTP 200 with unchanged shapes."""
+    # /api/health
+    r = client.get("/api/health")
+    assert r.status_code == 200, f"/api/health returned {r.status_code}"
+    assert r.json() == {"status": "ok"}
+
+    # /api/status-border-config
+    r = client.get("/api/status-border-config")
+    assert r.status_code == 200, f"/api/status-border-config returned {r.status_code}"
+    data = r.json()
+    assert "border_width_px" in data
+    assert "colors" in data
+
+    # /api/dot-grid-config
+    r = client.get("/api/dot-grid-config")
+    assert r.status_code == 200, f"/api/dot-grid-config returned {r.status_code}"
+    data = r.json()
+    assert "dot_size_px" in data or "spacing_px" in data or "color" in data
+
+    print("PASS: existing endpoints unaffected")
 
 
 if __name__ == "__main__":
-    passed = 0
-    failed = 0
-    all_tests = [
-        test_status_border_config_returns_valid_response,
-        test_existing_endpoints_still_work,
-    ]
-    for test in all_tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            print(f"FAIL: {test.__name__}: {e}")
-            failed += 1
-
-    print(f"\nResults: {passed} passed, {failed} failed out of {len(all_tests)} tests")
-    if failed > 0:
-        sys.exit(1)
-    else:
+    try:
+        test_fade_in_config_returns_200_with_all_fields()
+        test_existing_endpoints_unaffected()
         print("ALL TESTS PASSED")
+    except Exception as e:
+        print(f"FAIL: {e}")
+        sys.exit(1)

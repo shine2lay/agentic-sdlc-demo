@@ -169,6 +169,15 @@ class StatusBorderConfigResponse(BaseModel):
     colors: dict
 
 
+class FadeInConfigResponse(BaseModel):
+    duration_ms: int
+    delay_ms: int
+    easing: str
+    translate_y_px: int
+    stagger_ms: int
+    initial_opacity: float
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -332,6 +341,19 @@ def get_status_border_config():
             "running": "#3b82f6",
             "pending": "#6b7280",
         },
+    }
+
+
+@router.get("/fade-in-config", response_model=FadeInConfigResponse)
+def get_fade_in_config():
+    """Return configuration for run card fade-in animation on first appearance."""
+    return {
+        "duration_ms": 400,
+        "delay_ms": 0,
+        "easing": "ease-out",
+        "translate_y_px": 12,
+        "stagger_ms": 60,
+        "initial_opacity": 0.0,
     }
 
 
