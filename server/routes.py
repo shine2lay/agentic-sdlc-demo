@@ -187,6 +187,17 @@ class CheckmarkConfigResponse(BaseModel):
     easing: str
 
 
+class SkeletonConfigResponse(BaseModel):
+    rows: int
+    row_height_px: int
+    shimmer_duration_ms: int
+    border_radius_px: int
+    gap_px: int
+    base_color: str
+    shimmer_color: str
+    shimmer_angle_deg: int
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -376,6 +387,21 @@ def get_checkmark_config():
         "animation_duration_ms": 600,
         "display_duration_ms": 1500,
         "easing": "ease-out",
+    }
+
+
+@router.get("/skeleton-config", response_model=SkeletonConfigResponse)
+def get_skeleton_config():
+    """Return configuration for the shimmer loading skeleton shown while runs are being fetched."""
+    return {
+        "rows": 8,
+        "row_height_px": 72,
+        "shimmer_duration_ms": 1500,
+        "border_radius_px": 8,
+        "gap_px": 12,
+        "base_color": "#1e293b",
+        "shimmer_color": "#334155",
+        "shimmer_angle_deg": 90,
     }
 
 
