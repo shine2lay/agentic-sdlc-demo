@@ -33,23 +33,6 @@ export async function fetchRun(id: string): Promise<Run> {
   return res.json();
 }
 
-export async function createRun(workflow: string, inputs: Record<string, unknown> = {}): Promise<{ id: string; status: string }> {
-  const res = await fetch(`${API_URL}/api/runs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workflow, inputs }),
-  });
-  return res.json();
-}
-
-export function connectRunWebSocket(runId: string, onMessage: (msg: unknown) => void): WebSocket {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsBase = API_URL.replace(/^http(s?):/, `ws$1:`) || `${protocol}//${window.location.host}`;
-  const ws = new WebSocket(`${wsBase}/ws/${runId}`);
-  ws.onmessage = (e) => onMessage(JSON.parse(e.data));
-  return ws;
-}
-
 export async function submitSuggestion(suggestion: string): Promise<{ status: string; execution_id?: string; message: string }> {
   const res = await fetch(`${API_URL}/api/suggest`, {
     method: 'POST',
