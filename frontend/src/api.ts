@@ -6,6 +6,12 @@ export async function fetchHealth(): Promise<{ status: string }> {
   return res.json();
 }
 
+export async function fetchVersion(): Promise<{ version: string; deployed_by: string }> {
+  const res = await fetch(`${API_URL}/api/version`);
+  if (!res.ok) throw new Error(`Fetch version failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
