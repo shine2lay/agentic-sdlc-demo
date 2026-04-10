@@ -130,6 +130,13 @@ class TypewriterConfigResponse(BaseModel):
     start_delay_ms: int
 
 
+class DotGridConfigResponse(BaseModel):
+    dot_size_px: float
+    dot_spacing_px: int
+    dot_color: str
+    dot_opacity: float
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -253,6 +260,17 @@ def get_typewriter_config():
         ],
         "speed_ms": 80,
         "start_delay_ms": 300,
+    }
+
+
+@router.get("/dot-grid-config", response_model=DotGridConfigResponse)
+def get_dot_grid_config():
+    """Return configuration for the page background dot grid pattern."""
+    return {
+        "dot_size_px": 1.5,
+        "dot_spacing_px": 24,
+        "dot_color": "#7dd3fc",
+        "dot_opacity": 0.08,
     }
 
 
