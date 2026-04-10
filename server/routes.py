@@ -46,28 +46,6 @@ def extract_workflow_output(result: dict | None) -> dict | None:
     return None
 
 
-def extract_stage_progress(result: dict | None) -> dict | None:
-    """Extract stage progress counts from execution result nodes."""
-    if result is None:
-        return None
-    execution = result.get("execution")
-    if not isinstance(execution, dict):
-        return None
-    nodes = execution.get("nodes", execution.get("stages", []))
-    if not isinstance(nodes, list) or not nodes:
-        return None
-    total = len(nodes)
-    completed = sum(1 for n in nodes if isinstance(n, dict) and n.get("status") == "completed")
-    failed = sum(1 for n in nodes if isinstance(n, dict) and n.get("status") == "failed")
-    percent = round(completed / total * 100) if total > 0 else 0
-    return {
-        "completed_stages": completed,
-        "total_stages": total,
-        "failed_stages": failed,
-        "percent": percent,
-    }
-
-
 # ── Request/Response models ───────────────────────────────────────
 
 class CreateRunRequest(BaseModel):
@@ -103,21 +81,6 @@ class TypewriterConfigResponse(BaseModel):
     lines: List[TypewriterLine]
     speed_ms: int
     start_delay_ms: int
-
-
-class StageProgressInfo(BaseModel):
-    completed_stages: int
-    total_stages: int
-    failed_stages: int
-    percent: int
-
-
-class ProgressBarConfigResponse(BaseModel):
-    bar_height_px: int
-    bar_color: str
-    bar_bg_color: str
-    bar_border_radius: str
-    animate: bool
 
 
 class BackToTopConfigResponse(BaseModel):
@@ -156,18 +119,6 @@ def get_typewriter_config():
         ],
         "speed_ms": 80,
         "start_delay_ms": 300,
-    }
-
-
-@router.get("/progress-bar-config", response_model=ProgressBarConfigResponse)
-def get_progress_bar_config():
-    """Return configuration for the progress bar UI component."""
-    return {
-        "bar_height_px": 4,
-        "bar_color": "#22c55e",
-        "bar_bg_color": "#e5e7eb",
-        "bar_border_radius": "2px",
-        "animate": True,
     }
 
 
@@ -288,7 +239,6 @@ def list_runs(
                 "duration_seconds": calculate_duration(r.started_at, r.completed_at),
                 "total_tokens": extract_total_tokens(r.get_result()),
                 "workflow_output": extract_workflow_output(r.get_result()),
-                "stage_progress": extract_stage_progress(r.get_result()),
             }
             for r in runs
         ],
