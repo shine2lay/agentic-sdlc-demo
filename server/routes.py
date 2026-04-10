@@ -80,6 +80,22 @@ def extract_workflow_output(result: dict | None) -> dict | None:
     return None
 
 
+def classify_run_outcome(run: Run) -> str:
+    """Classify a run into an outcome category matching frontend getOutcome() logic."""
+    if run.status in ("running", "claimed"):
+        return "running"
+    if run.status == "pending":
+        return "pending"
+    if run.status == "failed":
+        return "failed"
+    if run.status == "completed":
+        workflow_output = extract_workflow_output(run.get_result())
+        if workflow_output is not None and workflow_output.get("result", "") in ("REJECT", "reject"):
+            return "rejected"
+        return "deployed"
+    return "pending"
+
+
 class CreateRunRequest(BaseModel):
     workflow: str
     inputs: dict[str, Any] = {}
@@ -137,6 +153,15 @@ class DotGridConfigResponse(BaseModel):
     dot_opacity: float
 
 
+class RunCountsResponse(BaseModel):
+    all: int
+    deployed: int
+    rejected: int
+    failed: int
+    running: int
+    pending: int
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -170,6 +195,18 @@ def pipeline_stats(session: Session = Depends(get_session)):
     completed = sum(1 for run in all_runs if run.status == "completed")
     failed = sum(1 for run in all_runs if run.status == "failed")
     return {"completed": completed, "failed": failed, "total": completed + failed}
+
+
+@router.get("/run-counts", response_model=RunCountsResponse)
+def run_counts(session: Session = Depends(get_session)):
+    """Return count badges for filter tabs: all, deployed, rejected, failed, running, pending."""
+    runs = session.exec(select(Run)).all()
+    counts = {"all": 0, "deployed": 0, "rejected": 0, "failed": 0, "running": 0, "pending": 0}
+    for run in runs:
+        outcome = classify_run_outcome(run)
+        counts[outcome] += 1
+        counts["all"] += 1
+    return RunCountsResponse(**counts)
 
 
 @router.get("/status")
