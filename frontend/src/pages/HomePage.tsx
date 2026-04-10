@@ -289,7 +289,7 @@ export function HomePage() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
-              {filteredRuns.map((run) => {
+              {filteredRuns.map((run, index) => {
                 const clickable = isClickable(run);
                 const outcome = getOutcome(run);
                 const task = (run.inputs as Record<string, unknown>)?.task_description as string || run.workflow;
@@ -306,7 +306,8 @@ export function HomePage() {
                 return (
                   <div
                     key={run.id}
-                    className={`bg-[var(--temper-surface)] border border-l-[3px] rounded-lg p-4 transition-all ${s.border} ${s.leftBorder} ${clickable ? 'cursor-pointer' : ''}`}
+                    className={`bg-[var(--temper-surface)] border border-l-[3px] rounded-lg p-4 transition-all animate-fade-in ${s.border} ${s.leftBorder} ${clickable ? 'cursor-pointer' : ''}`}
+                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
                     onClick={() => clickable && navigate(`/runs/${run.id}`)}
                   >
                     <div className="flex items-start gap-2">

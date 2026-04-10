@@ -1,11 +1,11 @@
 """
-Acceptance tests for: pulsing glow animation on active pipeline stage circles.
+Acceptance tests for: staggered fade-in animation on run cards.
 
 Verifies that:
-1. index.css contains the pulse-glow @keyframes and .animate-pulse-glow class
-2. index.css contains a prefers-reduced-motion rule for animate-pulse-glow
-3. HomePage.tsx uses animate-pulse-glow on the active circle instead of static shadow
-4. HomePage.tsx uses scoped transition (not transition-all) on the circle div
+1. HomePage.tsx .map callback captures the array index for stagger delay
+2. HomePage.tsx run card div has animate-fade-in class with stagger style
+3. index.css .animate-fade-in uses 0.35s duration (not default 0.2s)
+4. index.css has prefers-reduced-motion rule that disables .animate-fade-in
 """
 
 import sys
@@ -21,134 +21,90 @@ def read_file(path: str) -> str:
         return f.read()
 
 
-def test_css_has_pulse_glow_keyframes():
-    """index.css must define @keyframes pulse-glow with box-shadow steps."""
-    css = read_file(CSS_PATH)
-    assert "@keyframes pulse-glow" in css, (
-        "@keyframes pulse-glow not found in index.css"
+def test_map_callback_captures_index():
+    """The .map callback must capture the array index for stagger delay."""
+    src = read_file(TSX_PATH)
+    assert re.search(r"filteredRuns\.map\(\(run,\s*index\)", src), (
+        "filteredRuns.map must capture `index` parameter: .map((run, index) => ...)"
     )
-    # Should contain box-shadow declarations inside the keyframe
+    print("PASS: map callback captures index")
+
+
+def test_run_card_has_fade_in_class():
+    """Each run card div must include the animate-fade-in class."""
+    src = read_file(TSX_PATH)
+    # Find the run card div (the one with bg-[var(--temper-surface)] and border-l-[3px])
     match = re.search(
-        r"@keyframes pulse-glow\s*\{([\s\S]*?)\n\}", css
+        r'className=\{`bg-\[var\(--temper-surface\)\][^`]*`\}', src
     )
-    assert match, "Could not parse @keyframes pulse-glow block"
-    block = match.group(1)
-    assert "box-shadow" in block, (
-        "pulse-glow keyframe must animate box-shadow"
+    assert match, "Could not find the run card className in HomePage.tsx"
+    card_class = match.group(0)
+    assert "animate-fade-in" in card_class, (
+        "Run card className must include 'animate-fade-in'"
     )
-    print("PASS: CSS has pulse-glow keyframes with box-shadow")
+    print("PASS: run card has animate-fade-in class")
 
 
-def test_css_has_animate_pulse_glow_class():
-    """index.css must define .animate-pulse-glow utility class."""
-    css = read_file(CSS_PATH)
-    assert ".animate-pulse-glow" in css, (
-        ".animate-pulse-glow class not found in index.css"
+def test_run_card_has_stagger_delay():
+    """Each run card must set animationDelay based on index * 50ms."""
+    src = read_file(TSX_PATH)
+    assert re.search(r"animationDelay.*index\s*\*\s*50", src), (
+        "Run card must set animationDelay using index * 50ms"
     )
-    # The class should reference the pulse-glow animation
-    match = re.search(
-        r"\.animate-pulse-glow\s*\{([\s\S]*?)\}", css
-    )
-    assert match, "Could not parse .animate-pulse-glow block"
-    block = match.group(1)
-    assert "animation" in block and "pulse-glow" in block, (
-        ".animate-pulse-glow must set animation to pulse-glow"
-    )
-    print("PASS: CSS has .animate-pulse-glow utility class")
+    print("PASS: run card has stagger delay")
 
 
-def test_css_has_reduced_motion_rule():
-    """index.css must include prefers-reduced-motion for pulse-glow accessibility."""
-    css = read_file(CSS_PATH)
-    assert "prefers-reduced-motion" in css, (
-        "prefers-reduced-motion media query not found in index.css"
+def test_run_card_has_fill_mode_backwards():
+    """animationFillMode: 'backwards' keeps cards invisible during delay."""
+    src = read_file(TSX_PATH)
+    assert re.search(r"animationFillMode.*backwards", src), (
+        "Run card must set animationFillMode: 'backwards'"
     )
-    # Check that the reduced-motion block references animate-pulse-glow
-    reduced_motion_match = re.search(
-        r"@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}", css
-    )
-    assert reduced_motion_match, "Could not parse prefers-reduced-motion block"
-    block = reduced_motion_match.group(1)
-    assert "animate-pulse-glow" in block, (
-        "prefers-reduced-motion block must reference .animate-pulse-glow"
-    )
-    print("PASS: CSS has prefers-reduced-motion rule for pulse-glow")
+    print("PASS: run card has animationFillMode backwards")
 
 
-def test_homepage_uses_animate_pulse_glow():
-    """HomePage.tsx active circle must use animate-pulse-glow class."""
-    tsx = read_file(TSX_PATH)
-    assert "animate-pulse-glow" in tsx, (
-        "animate-pulse-glow class not used in HomePage.tsx"
+def test_fade_in_duration_is_035s():
+    """The .animate-fade-in duration must be 0.35s (not default 0.2s)."""
+    src = read_file(CSS_PATH)
+    assert re.search(r"\.animate-fade-in\s*\{[^}]*fade-in\s+0\.35s", src), (
+        ".animate-fade-in must use 0.35s duration"
     )
-    # Verify it's near scale-110 (the active circle branch)
-    lines = tsx.split("\n")
-    found = False
-    for line in lines:
-        if "scale-110" in line and "animate-pulse-glow" in line:
-            found = True
-            break
-    if not found:
-        scale_pos = tsx.find("scale-110")
-        glow_pos = tsx.find("animate-pulse-glow")
-        if scale_pos >= 0 and glow_pos >= 0 and abs(scale_pos - glow_pos) < 300:
-            found = True
-    assert found, (
-        "animate-pulse-glow must appear near scale-110 in the active circle branch"
-    )
-    print("PASS: HomePage.tsx uses animate-pulse-glow on active circle")
+    print("PASS: fade-in duration is 0.35s")
 
 
-def test_homepage_no_transition_all_on_circle():
-    """HomePage.tsx circle div must NOT use transition-all (to avoid fighting keyframes)."""
-    tsx = read_file(TSX_PATH)
-    match = re.search(
-        r"className=\{`w-10 h-10 rounded-full[^`]*`\}", tsx, re.DOTALL
+def test_reduced_motion_for_fade_in():
+    """A prefers-reduced-motion query must disable .animate-fade-in."""
+    src = read_file(CSS_PATH)
+    pattern = r"@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[^}]*\.animate-fade-in\s*\{[^}]*animation:\s*none"
+    assert re.search(pattern, src, re.DOTALL), (
+        "Must have @media (prefers-reduced-motion: reduce) { .animate-fade-in { animation: none } }"
     )
-    assert match, "Could not find the circle div className in HomePage.tsx"
-    circle_class = match.group(0)
-    assert "transition-all" not in circle_class, (
-        "Circle div must not use transition-all -- use scoped transition instead "
-        "(e.g. transition-[transform,colors,opacity])"
-    )
-    assert "transition-[" in circle_class or "transition-transform" in circle_class, (
-        "Circle div must use a scoped transition (e.g. transition-[transform,colors,opacity])"
-    )
-    print("PASS: HomePage.tsx circle div uses scoped transition, not transition-all")
+    print("PASS: reduced-motion disables fade-in")
 
 
-def test_homepage_no_static_shadow_on_active():
-    """HomePage.tsx active circle must NOT have static shadow-lg (replaced by glow)."""
-    tsx = read_file(TSX_PATH)
-    match = re.search(
-        r"className=\{`w-10 h-10 rounded-full[^`]*`\}", tsx, re.DOTALL
-    )
-    assert match, "Could not find the circle div className in HomePage.tsx"
-    circle_class = match.group(0)
-    assert "shadow-lg" not in circle_class, (
-        "Active circle must not have shadow-lg -- replaced by animate-pulse-glow"
-    )
-    print("PASS: HomePage.tsx active circle has no static shadow-lg")
-
+ALL_TESTS = [
+    test_map_callback_captures_index,
+    test_run_card_has_fade_in_class,
+    test_run_card_has_stagger_delay,
+    test_run_card_has_fill_mode_backwards,
+    test_fade_in_duration_is_035s,
+    test_reduced_motion_for_fade_in,
+]
 
 if __name__ == "__main__":
-    tests = [
-        test_css_has_pulse_glow_keyframes,
-        test_css_has_animate_pulse_glow_class,
-        test_css_has_reduced_motion_rule,
-        test_homepage_uses_animate_pulse_glow,
-        test_homepage_no_transition_all_on_circle,
-        test_homepage_no_static_shadow_on_active,
-    ]
-    failed = 0
-    for t in tests:
+    failed = []
+    for t in ALL_TESTS:
         try:
             t()
         except Exception as e:
+            failed.append((t.__name__, e))
             print(f"FAIL: {t.__name__}: {e}")
-            failed += 1
+
+    print(f"\n{len(ALL_TESTS) - len(failed)}/{len(ALL_TESTS)} passed")
     if failed:
-        print(f"\n{failed}/{len(tests)} tests FAILED")
+        print("FAILED tests:")
+        for name, _ in failed:
+            print(f"  - {name}")
         sys.exit(1)
     else:
-        print("\nALL TESTS PASSED")
+        print("ALL TESTS PASSED")
