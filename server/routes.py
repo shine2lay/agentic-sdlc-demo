@@ -198,6 +198,13 @@ class SkeletonConfigResponse(BaseModel):
     shimmer_angle_deg: int
 
 
+class FooterConfigResponse(BaseModel):
+    text: str
+    font_size_px: int
+    text_color: str
+    opacity: float
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -402,6 +409,17 @@ def get_skeleton_config():
         "base_color": "#1e293b",
         "shimmer_color": "#334155",
         "shimmer_angle_deg": 90,
+    }
+
+
+@router.get("/footer-config", response_model=FooterConfigResponse)
+def get_footer_config():
+    """Return configuration for the page footer branding text."""
+    return {
+        "text": "Powered by Temper AI",
+        "font_size_px": 12,
+        "text_color": "#94a3b8",
+        "opacity": 0.6,
     }
 
 
