@@ -294,19 +294,19 @@ export function HomePage() {
                 const outcome = getOutcome(run);
                 const task = (run.inputs as Record<string, unknown>)?.task_description as string || run.workflow;
 
-                const styles: Record<RunOutcome, { border: string; icon: string; iconColor: string }> = {
-                  deployed: { border: 'border-emerald-500/30 hover:border-emerald-500/60', icon: '✓', iconColor: 'text-emerald-400' },
-                  rejected: { border: 'border-amber-500/30 hover:border-amber-500/50', icon: '⊘', iconColor: 'text-amber-400' },
-                  failed: { border: 'border-red-500/20 hover:border-red-500/40', icon: '✗', iconColor: 'text-red-400' },
-                  running: { border: 'border-[var(--temper-accent)]/30 hover:border-[var(--temper-accent)]/60', icon: '●', iconColor: 'text-[var(--temper-accent)] animate-pulse' },
-                  pending: { border: 'border-[var(--temper-border)]', icon: '○', iconColor: 'text-[var(--temper-text-dim)]' },
+                const styles: Record<RunOutcome, { border: string; leftBorder: string; icon: string; iconColor: string }> = {
+                  deployed: { border: 'border-emerald-500/30 hover:border-emerald-500/60', leftBorder: 'border-l-emerald-500', icon: '✓', iconColor: 'text-emerald-400' },
+                  rejected: { border: 'border-amber-500/30 hover:border-amber-500/50', leftBorder: 'border-l-amber-500', icon: '⊘', iconColor: 'text-amber-400' },
+                  failed: { border: 'border-red-500/20 hover:border-red-500/40', leftBorder: 'border-l-red-500', icon: '✗', iconColor: 'text-red-400' },
+                  running: { border: 'border-[var(--temper-accent)]/30 hover:border-[var(--temper-accent)]/60', leftBorder: 'border-l-[var(--temper-accent)]', icon: '●', iconColor: 'text-[var(--temper-accent)] animate-pulse' },
+                  pending: { border: 'border-[var(--temper-border)]', leftBorder: 'border-l-[var(--temper-border)]', icon: '○', iconColor: 'text-[var(--temper-text-dim)]' },
                 };
                 const s = styles[outcome];
 
                 return (
                   <div
                     key={run.id}
-                    className={`bg-[var(--temper-surface)] border rounded-lg p-4 transition-all ${s.border} ${clickable ? 'cursor-pointer' : ''}`}
+                    className={`bg-[var(--temper-surface)] border border-l-[3px] rounded-lg p-4 transition-all ${s.border} ${s.leftBorder} ${clickable ? 'cursor-pointer' : ''}`}
                     onClick={() => clickable && navigate(`/runs/${run.id}`)}
                   >
                     <div className="flex items-start gap-2">
