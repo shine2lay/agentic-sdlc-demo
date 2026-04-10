@@ -205,6 +205,17 @@ class FooterConfigResponse(BaseModel):
     opacity: float
 
 
+class GradientBannerConfigResponse(BaseModel):
+    text: str
+    font_size_px: int
+    font_weight: str
+    text_color: str
+    height_px: int
+    gradient_start: str
+    gradient_end: str
+    gradient_angle_deg: int
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -420,6 +431,21 @@ def get_footer_config():
         "font_size_px": 12,
         "text_color": "#94a3b8",
         "opacity": 0.6,
+    }
+
+
+@router.get("/gradient-banner-config", response_model=GradientBannerConfigResponse)
+def get_gradient_banner_config():
+    """Return configuration for the gradient banner displayed at the top of the page."""
+    return {
+        "text": "Powered by AI",
+        "font_size_px": 14,
+        "font_weight": "600",
+        "text_color": "#ffffff",
+        "height_px": 40,
+        "gradient_start": "#6366f1",
+        "gradient_end": "#8b5cf6",
+        "gradient_angle_deg": 90,
     }
 
 

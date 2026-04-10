@@ -1,93 +1,52 @@
-"""Acceptance tests for GET /api/footer-config endpoint.
-
-Tests the footer branding configuration endpoint that should return
-text, font_size_px, text_color, and opacity fields. Also verifies
-no regression on adjacent endpoints and that the response does NOT
-include a version field (version is served by /api/version).
-"""
-
 import sys
-
 from fastapi.testclient import TestClient
-
 from server.app import app
 
 client = TestClient(app)
 
 
-def test_footer_config_returns_200_with_expected_fields():
-    """GET /api/footer-config returns 200 with text, font_size_px, text_color, opacity."""
-    response = client.get("/api/footer-config")
+def test_gradient_banner_config_returns_all_fields_with_correct_values():
+    """Verify GET /api/gradient-banner-config returns 200 with all 8 expected fields and exact values."""
+    response = client.get("/api/gradient-banner-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
-    assert data["text"] == "Powered by Temper AI", f"Unexpected text: {data.get('text')}"
-    assert data["font_size_px"] == 12, f"Unexpected font_size_px: {data.get('font_size_px')}"
-    assert data["text_color"] == "#94a3b8", f"Unexpected text_color: {data.get('text_color')}"
-    assert data["opacity"] == 0.6, f"Unexpected opacity: {data.get('opacity')}"
-    # Must NOT contain a version field (version lives at /api/version)
-    assert "version" not in data, "footer-config must not include a version field"
-    print("PASS: footer-config returns 200 with expected fields")
+    expected = {
+        "text": "Powered by AI",
+        "font_size_px": 14,
+        "font_weight": "600",
+        "text_color": "#ffffff",
+        "height_px": 40,
+        "gradient_start": "#6366f1",
+        "gradient_end": "#8b5cf6",
+        "gradient_angle_deg": 90,
+    }
+    for key, value in expected.items():
+        assert key in data, f"Missing field: {key}"
+        assert data[key] == value, f"Field {key}: expected {value!r}, got {data[key]!r}"
+    print("PASS: gradient-banner-config returns all fields with correct values")
 
 
-def test_footer_config_has_exactly_four_fields():
-    """Response body must contain exactly {text, font_size_px, text_color, opacity} — no extras."""
-    response = client.get("/api/footer-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    expected_keys = {"text", "font_size_px", "text_color", "opacity"}
-    assert set(data.keys()) == expected_keys, (
-        f"Expected keys {expected_keys}, got {set(data.keys())}"
-    )
-    print("PASS: footer-config has exactly four fields")
+def test_existing_endpoints_still_work():
+    """Verify /api/health and /api/footer-config are unaffected by the new endpoint."""
+    # Health check
+    health = client.get("/api/health")
+    assert health.status_code == 200, f"Health expected 200, got {health.status_code}"
+    assert health.json() == {"status": "ok"}, f"Unexpected health body: {health.json()}"
 
-
-def test_existing_version_endpoint_not_regressed():
-    """GET /api/version still returns 200 with version and deployed_by."""
-    response = client.get("/api/version")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["version"] == "0.4.0", f"Unexpected version: {data.get('version')}"
-    assert data["deployed_by"] == "agentic-sdlc", f"Unexpected deployed_by: {data.get('deployed_by')}"
-    print("PASS: /api/version not regressed")
-
-
-def test_existing_health_endpoint_not_regressed():
-    """GET /api/health still returns 200 with status ok."""
-    response = client.get("/api/health")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["status"] == "ok", f"Unexpected status: {data.get('status')}"
-    print("PASS: /api/health not regressed")
-
-
-def test_existing_skeleton_config_not_regressed():
-    """GET /api/skeleton-config still returns 200 — no route conflict with adjacent endpoint."""
-    response = client.get("/api/skeleton-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert "rows" in data, "skeleton-config missing 'rows' field"
-    print("PASS: /api/skeleton-config not regressed")
+    # Footer config regression
+    footer = client.get("/api/footer-config")
+    assert footer.status_code == 200, f"Footer expected 200, got {footer.status_code}"
+    footer_data = footer.json()
+    assert footer_data["text"] == "Powered by Temper AI"
+    assert footer_data["font_size_px"] == 12
+    print("PASS: existing endpoints still work")
 
 
 if __name__ == "__main__":
-    passed = 0
-    failed = 0
-    for name, func in [
-        ("test_footer_config_returns_200_with_expected_fields", test_footer_config_returns_200_with_expected_fields),
-        ("test_footer_config_has_exactly_four_fields", test_footer_config_has_exactly_four_fields),
-        ("test_existing_version_endpoint_not_regressed", test_existing_version_endpoint_not_regressed),
-        ("test_existing_health_endpoint_not_regressed", test_existing_health_endpoint_not_regressed),
-        ("test_existing_skeleton_config_not_regressed", test_existing_skeleton_config_not_regressed),
-    ]:
-        try:
-            func()
-            passed += 1
-        except Exception as e:
-            print(f"FAIL: {name}: {e}")
-            failed += 1
-
-    print(f"\nResults: {passed} passed, {failed} failed out of {passed + failed}")
-    if failed > 0:
-        sys.exit(1)
-    else:
+    try:
+        test_gradient_banner_config_returns_all_fields_with_correct_values()
+        test_existing_endpoints_still_work()
         print("ALL TESTS PASSED")
+    except Exception as e:
+        print(f"FAIL: {e}")
+        sys.exit(1)
