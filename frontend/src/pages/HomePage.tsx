@@ -289,11 +289,18 @@ export function HomePage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg p-4 h-24">
-                <div className="skeleton h-4 w-3/4" />
-                <div className="skeleton h-3 w-1/2 mt-3" />
+          <div className="grid grid-cols-2 gap-3" role="status" aria-busy="true">
+            <span className="sr-only">Loading recent changes</span>
+            {Array.from({length: 8}, (_, i) => (
+              <div key={i} className="bg-[var(--temper-surface)] border border-l-[3px] border-[var(--temper-border)] rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <div className="skeleton w-4 h-4 rounded-full mt-0.5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="skeleton h-4 w-3/4" />
+                    <div className="skeleton h-4 w-1/2 mt-1" />
+                    <div className="skeleton h-3 w-2/5 mt-3" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
