@@ -51,9 +51,9 @@ function PipelineAnimation() {
         <div key={stage} className="flex items-center">
           <div className={`flex flex-col items-center transition-all duration-300 ${i <= active ? 'opacity-100' : 'opacity-30'}`}>
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-[transform,colors,opacity] duration-300 ${
                 i < active ? 'bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50' :
-                i === active ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] border-2 border-[var(--temper-accent)] scale-110 shadow-lg shadow-[var(--temper-accent)]/20' :
+                i === active ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] border-2 border-[var(--temper-accent)] scale-110 animate-pulse-glow' :
                 'bg-[var(--temper-surface)] text-[var(--temper-text-dim)] border-2 border-[var(--temper-border)]'
               }`}
             >
