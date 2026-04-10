@@ -92,6 +92,17 @@ const CACHE_KEY = 'sdlc-runs-cache';
 function getCached(): Run[] { try { return JSON.parse(sessionStorage.getItem(CACHE_KEY) || '[]'); } catch { return []; } }
 function setCache(r: Run[]) { try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(r)); } catch {} }
 
+// ── Animated checkmark ────────────────────────────────────
+
+function AnimatedCheckmark() {
+  return (
+    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle className="animate-checkmark-circle" cx="12" cy="12" r="11" stroke="#34d399" strokeWidth="2" fill="#34d399" fillOpacity="0.1" />
+      <path className="animate-checkmark-draw" d="M7 13l3 3 7-7" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // ── Main ───────────────────────────────────────────────────
 
 export function HomePage() {
@@ -134,13 +145,13 @@ export function HomePage() {
     try {
       const result = await submitSuggestion(suggestion);
       setSubmitState('success');
-      setSubmitMessage(result.message);
+      setSubmitMessage(result.message || 'Suggestion submitted successfully');
       setSuggestion('');
-      setTimeout(() => setSubmitState('idle'), 5000);
+      setTimeout(() => { setSubmitState('idle'); setSubmitMessage(''); }, 5000);
     } catch (err) {
       setSubmitState('error');
       setSubmitMessage(err instanceof Error ? err.message : 'Something went wrong');
-      setTimeout(() => setSubmitState('idle'), 5000);
+      setTimeout(() => { setSubmitState('idle'); setSubmitMessage(''); }, 5000);
     }
   };
 
@@ -221,7 +232,11 @@ export function HomePage() {
           </div>
 
           {submitMessage && (
-            <div className={`mt-3 text-sm px-3 py-2 rounded-md ${submitState === 'success' ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}`}>
+            <div
+              role="status"
+              className={`mt-3 text-sm px-3 py-2 rounded-md flex items-center gap-2 ${submitState === 'success' ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}`}
+            >
+              {submitState === 'success' && <AnimatedCheckmark />}
               {submitMessage}
             </div>
           )}

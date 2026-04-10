@@ -183,6 +183,35 @@ body {
   }
 }
 
+/* Checkmark animation for successful submission */
+@keyframes checkmark-circle {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes checkmark-draw {
+  0% { stroke-dasharray: 20; stroke-dashoffset: 20; }
+  100% { stroke-dasharray: 20; stroke-dashoffset: 0; }
+}
+.animate-checkmark-circle {
+  animation: checkmark-circle 0.4s ease-out forwards;
+  transform-origin: center;
+}
+.animate-checkmark-draw {
+  animation: checkmark-draw 0.3s ease-out 0.2s forwards;
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-checkmark-circle,
+  .animate-checkmark-draw {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+    stroke-dashoffset: 0;
+  }
+}
+
 /* Skeleton loading shimmer */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
