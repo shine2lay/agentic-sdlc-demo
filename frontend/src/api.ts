@@ -12,6 +12,15 @@ export async function fetchVersion(): Promise<{ version: string; deployed_by: st
   return res.json();
 }
 
+export interface TypewriterLine { text: string; css_class: string; }
+export interface TypewriterConfig { lines: TypewriterLine[]; speed_ms: number; start_delay_ms: number; }
+
+export async function fetchTypewriterConfig(): Promise<TypewriterConfig> {
+  const res = await fetch(`${API_URL}/api/typewriter-config`);
+  if (!res.ok) throw new Error(`Fetch typewriter config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

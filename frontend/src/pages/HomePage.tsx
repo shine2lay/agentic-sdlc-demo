@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, type Run } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, type Run, type TypewriterConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -103,6 +103,66 @@ function AnimatedCheckmark() {
   );
 }
 
+// ── Typewriter heading ───────────────────────────────────
+
+function TypewriterHeading({ lines, speedMs, startDelayMs }: {
+  lines: { text: string; css_class: string }[];
+  speedMs: number;
+  startDelayMs: number;
+}) {
+  const totalChars = lines.reduce((sum, l) => sum + l.text.length, 0);
+  const [charCount, setCharCount] = useState(0);
+  const [isDone, setIsDone] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCharCount(totalChars);
+      setIsDone(true);
+      return;
+    }
+    let intervalId: number;
+    const timeoutId = window.setTimeout(() => {
+      intervalId = window.setInterval(() => {
+        setCharCount(prev => {
+          const next = prev + 1;
+          if (next >= totalChars) {
+            clearInterval(intervalId);
+            setIsDone(true);
+            return totalChars;
+          }
+          return next;
+        });
+      }, speedMs);
+    }, startDelayMs);
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [totalChars, speedMs, startDelayMs]);
+
+  const fullText = lines.map(l => l.text).join(' ');
+  let consumed = 0;
+  return (
+    <h1 className="text-4xl font-bold tracking-tight text-[var(--temper-text)]" aria-label={fullText} style={{ minHeight: '4.5rem' }}>
+      {lines.map((line, i) => {
+        const start = consumed;
+        consumed += line.text.length;
+        const visible = Math.max(0, Math.min(line.text.length, charCount - start));
+        const segment = line.text.slice(0, visible);
+        return (
+          <span key={i}>
+            {i > 0 && <br />}
+            <span className={line.css_class === 'accent' ? 'text-[var(--temper-accent)]' : undefined}>
+              {segment}
+            </span>
+          </span>
+        );
+      })}
+      {!isDone && <span className="typewriter-cursor">|</span>}
+    </h1>
+  );
+}
+
 // ── Main ───────────────────────────────────────────────────
 
 export function HomePage() {
@@ -115,9 +175,11 @@ export function HomePage() {
   const [submitMessage, setSubmitMessage] = useState('');
   const [filter, setFilter] = useState<'all' | 'deployed' | 'rejected' | 'failed'>('all');
   const [showCount, setShowCount] = useState(8);
+  const [typewriterConfig, setTypewriterConfig] = useState<TypewriterConfig | null>(null);
 
   useEffect(() => {
     fetchHealth().then(() => setHealth('ok')).catch(() => setHealth('error'));
+    fetchTypewriterConfig().then(setTypewriterConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -170,10 +232,18 @@ export function HomePage() {
             </span>
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight text-[var(--temper-text)]">
-            Describe a change.<br />
-            <span className="text-[var(--temper-accent)]">Watch AI build it.</span>
-          </h1>
+          {typewriterConfig ? (
+            <TypewriterHeading
+              lines={typewriterConfig.lines}
+              speedMs={typewriterConfig.speed_ms}
+              startDelayMs={typewriterConfig.start_delay_ms}
+            />
+          ) : (
+            <h1 className="text-4xl font-bold tracking-tight text-[var(--temper-text)]">
+              Describe a change.<br />
+              <span className="text-[var(--temper-accent)]">Watch AI build it.</span>
+            </h1>
+          )}
           <p className="text-lg text-[var(--temper-text-muted)] mt-4 max-w-xl mx-auto leading-relaxed">
             Type what you want changed on this website. AI agents will validate, plan, code, test, review, and deploy it — automatically.
           </p>

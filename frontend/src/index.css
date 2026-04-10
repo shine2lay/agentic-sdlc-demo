@@ -212,6 +212,22 @@ body {
   }
 }
 
+/* Typewriter cursor */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.typewriter-cursor {
+  animation: blink-cursor 0.7s step-end infinite;
+  font-weight: 100;
+  margin-left: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-cursor {
+    display: none;
+  }
+}
+
 /* Skeleton loading shimmer */
 @keyframes shimmer {
   0% { background-position: -200% 0; }

@@ -119,6 +119,17 @@ class PipelineStagesResponse(BaseModel):
     stages: List[PipelineStage]
 
 
+class TypewriterLine(BaseModel):
+    text: str
+    css_class: str
+
+
+class TypewriterConfigResponse(BaseModel):
+    lines: List[TypewriterLine]
+    speed_ms: int
+    start_delay_ms: int
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -230,6 +241,19 @@ def get_pipeline_stages():
         PipelineStage(name="push", description="Push to remote and merge"),
     ]
     return {"stages": stages}
+
+
+@router.get("/typewriter-config", response_model=TypewriterConfigResponse)
+def get_typewriter_config():
+    """Return configuration for the homepage typewriter animation."""
+    return {
+        "lines": [
+            {"text": "Describe a change.", "css_class": ""},
+            {"text": "Watch AI build it.", "css_class": "accent"},
+        ],
+        "speed_ms": 80,
+        "start_delay_ms": 300,
+    }
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
