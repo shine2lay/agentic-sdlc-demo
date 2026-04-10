@@ -6,6 +6,7 @@ In dev mode, the Vite dev server proxies /api and /ws to this server.
 
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -14,15 +15,26 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlmodel import Session, select, text
 
-from server.database import init_db
+from server.database import engine, init_db
+from server.models import Run
 from server.routes import router
 from server.websocket import ws_router
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    # Log DB state on startup for debugging data loss
+    try:
+        with Session(engine) as s:
+            count = s.execute(text("SELECT count(*) FROM runs")).scalar()
+            logger.warning("STARTUP: runs table has %d rows", count)
+    except Exception as e:
+        logger.error("STARTUP: failed to check runs table: %s", e)
     yield
 
 
