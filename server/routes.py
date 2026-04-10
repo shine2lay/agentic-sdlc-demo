@@ -120,6 +120,20 @@ class ProgressBarConfigResponse(BaseModel):
     animate: bool
 
 
+class BackToTopConfigResponse(BaseModel):
+    enabled: bool
+    scroll_threshold_px: int
+    position_right_px: int
+    position_bottom_px: int
+    size_px: int
+    bg_color: str
+    hover_bg_color: str
+    icon_color: str
+    border_radius: str
+    transition_ms: int
+    scroll_behavior: str
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -154,6 +168,24 @@ def get_progress_bar_config():
         "bar_bg_color": "#e5e7eb",
         "bar_border_radius": "2px",
         "animate": True,
+    }
+
+
+@router.get("/back-to-top-config", response_model=BackToTopConfigResponse)
+def get_back_to_top_config():
+    """Return configuration for the back-to-top button UI component."""
+    return {
+        "enabled": True,
+        "scroll_threshold_px": 400,
+        "position_right_px": 32,
+        "position_bottom_px": 32,
+        "size_px": 44,
+        "bg_color": "#6366f1",
+        "hover_bg_color": "#4f46e5",
+        "icon_color": "#ffffff",
+        "border_radius": "50%",
+        "transition_ms": 200,
+        "scroll_behavior": "smooth",
     }
 
 

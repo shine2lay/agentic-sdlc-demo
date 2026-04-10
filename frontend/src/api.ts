@@ -21,6 +21,26 @@ export async function fetchTypewriterConfig(): Promise<TypewriterConfig> {
   return res.json();
 }
 
+export interface BackToTopConfig {
+  enabled: boolean;
+  scroll_threshold_px: number;
+  position_right_px: number;
+  position_bottom_px: number;
+  size_px: number;
+  bg_color: string;
+  hover_bg_color: string;
+  icon_color: string;
+  border_radius: string;
+  transition_ms: number;
+  scroll_behavior: ScrollBehavior;
+}
+
+export async function fetchBackToTopConfig(): Promise<BackToTopConfig> {
+  const res = await fetch(`${API_URL}/api/back-to-top-config`);
+  if (!res.ok) throw new Error(`Fetch back-to-top config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

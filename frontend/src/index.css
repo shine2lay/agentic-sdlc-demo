@@ -183,6 +183,22 @@ body {
   }
 }
 
+/* Back-to-top button entrance animation */
+@keyframes back-to-top-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.back-to-top-enter {
+  animation: back-to-top-enter 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top-enter {
+    animation: none;
+  }
+}
+
 /* Checkmark animation for successful submission */
 @keyframes checkmark-circle {
   0% { transform: scale(0); opacity: 0; }

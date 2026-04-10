@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, type Run, type TypewriterConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, type Run, type TypewriterConfig, type BackToTopConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -176,16 +176,42 @@ export function HomePage() {
   const [filter, setFilter] = useState<'all' | 'deployed' | 'rejected' | 'failed'>('all');
   const [showCount, setShowCount] = useState(8);
   const [typewriterConfig, setTypewriterConfig] = useState<TypewriterConfig | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [backToTopConfig, setBackToTopConfig] = useState<BackToTopConfig | null>(null);
 
   useEffect(() => {
     fetchHealth().then(() => setHealth('ok')).catch(() => setHealth('error'));
     fetchTypewriterConfig().then(setTypewriterConfig).catch(() => {});
+    fetchBackToTopConfig().then(setBackToTopConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!backToTopConfig?.enabled || !scrollRef.current) return;
+    const el = scrollRef.current;
+    const threshold = backToTopConfig.scroll_threshold_px;
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(() => {
+          setShowBackToTop(el.scrollTop > threshold);
+          ticking = false;
+        });
+      }
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [backToTopConfig]);
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: backToTopConfig?.scroll_behavior ?? 'smooth' });
+  }, [backToTopConfig]);
 
   const stats = useMemo(() => {
     const outcomes = runs.map(r => getOutcome(r));
@@ -218,7 +244,8 @@ export function HomePage() {
   };
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="relative h-full">
+    <div ref={scrollRef} className="h-full overflow-auto">
 
       {/* ── Hero ──────────────────────────────────────── */}
       <section className="relative overflow-hidden">
@@ -436,6 +463,30 @@ export function HomePage() {
           </>
         )}
       </section>
+    </div>
+    {showBackToTop && backToTopConfig && (
+      <button
+        onClick={scrollToTop}
+        aria-label="Back to top"
+        className="absolute z-40 flex items-center justify-center shadow-lg transition-opacity duration-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[var(--temper-accent)] back-to-top-enter"
+        style={{
+          right: backToTopConfig.position_right_px,
+          bottom: backToTopConfig.position_bottom_px,
+          width: backToTopConfig.size_px,
+          height: backToTopConfig.size_px,
+          backgroundColor: backToTopConfig.bg_color,
+          borderRadius: backToTopConfig.border_radius,
+          color: backToTopConfig.icon_color,
+          transition: `background-color ${backToTopConfig.transition_ms}ms ease`,
+        }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = backToTopConfig.hover_bg_color)}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = backToTopConfig.bg_color)}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 15l-6-6-6 6"/>
+        </svg>
+      </button>
+    )}
     </div>
   );
 }
