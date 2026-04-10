@@ -178,6 +178,15 @@ class FadeInConfigResponse(BaseModel):
     initial_opacity: float
 
 
+class CheckmarkConfigResponse(BaseModel):
+    size_px: int
+    stroke_color: str
+    stroke_width_px: int
+    animation_duration_ms: int
+    display_duration_ms: int
+    easing: str
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -354,6 +363,19 @@ def get_fade_in_config():
         "translate_y_px": 12,
         "stagger_ms": 60,
         "initial_opacity": 0.0,
+    }
+
+
+@router.get("/checkmark-config", response_model=CheckmarkConfigResponse)
+def get_checkmark_config():
+    """Return configuration for the suggestion submit success checkmark animation."""
+    return {
+        "size_px": 48,
+        "stroke_color": "#22c55e",
+        "stroke_width_px": 3,
+        "animation_duration_ms": 600,
+        "display_duration_ms": 1500,
+        "easing": "ease-out",
     }
 
 
