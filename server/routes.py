@@ -162,6 +162,13 @@ class RunCountsResponse(BaseModel):
     pending: int
 
 
+class StatusBorderConfigResponse(BaseModel):
+    border_width_px: int
+    border_radius_px: int
+    border_side: str
+    colors: dict
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -308,6 +315,23 @@ def get_dot_grid_config():
         "dot_spacing_px": 24,
         "dot_color": "#7dd3fc",
         "dot_opacity": 0.08,
+    }
+
+
+@router.get("/status-border-config", response_model=StatusBorderConfigResponse)
+def get_status_border_config():
+    """Return color mapping for run card left border by outcome status."""
+    return {
+        "border_width_px": 3,
+        "border_radius_px": 2,
+        "border_side": "left",
+        "colors": {
+            "deployed": "#22c55e",
+            "rejected": "#f59e0b",
+            "failed": "#ef4444",
+            "running": "#3b82f6",
+            "pending": "#6b7280",
+        },
     }
 
 
