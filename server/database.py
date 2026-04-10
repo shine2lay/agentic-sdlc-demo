@@ -6,6 +6,7 @@ import logging
 import os
 
 from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,17 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL, echo=False)
+if DATABASE_URL == "sqlite://":
+    # In-memory SQLite for testing: share one connection across threads
+    engine = create_engine(
+        DATABASE_URL, echo=False,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+elif DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL, echo=False)
 
 
 # Log DELETE and DROP statements for debugging data loss

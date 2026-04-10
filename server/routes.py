@@ -216,6 +216,23 @@ class GradientBannerConfigResponse(BaseModel):
     gradient_angle_deg: int
 
 
+class SuccessRateDataPoint(BaseModel):
+    date: str
+    total: int
+    successful: int
+    rate: float
+
+
+class MiniChartConfigResponse(BaseModel):
+    bar_color_success: str
+    bar_color_failure: str
+    bar_width_px: int
+    bar_gap_px: int
+    chart_height_px: int
+    point_count: int
+    data_points: List[SuccessRateDataPoint]
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -446,6 +463,48 @@ def get_gradient_banner_config():
         "gradient_start": "#6366f1",
         "gradient_end": "#8b5cf6",
         "gradient_angle_deg": 90,
+    }
+
+
+@router.get("/mini-chart-config", response_model=MiniChartConfigResponse)
+def get_mini_chart_config(session: Session = Depends(get_session)):
+    """Return mini chart configuration and success rate data points for the homepage chart."""
+    all_runs = session.exec(select(Run)).all()
+    date_buckets: dict[str, dict[str, int]] = {}
+    for run in all_runs:
+        outcome = classify_run_outcome(run)
+        # Also check the direct output format for "REJECT"/"reject"
+        if outcome == "deployed":
+            result = run.get_result()
+            if result:
+                output = result.get("output")
+                if output and isinstance(output, dict) and output.get("result", "") in ("REJECT", "reject"):
+                    outcome = "rejected"
+        if outcome not in ("deployed", "rejected", "failed"):
+            continue
+        day = run.created_at.date().isoformat()
+        if day not in date_buckets:
+            date_buckets[day] = {"total": 0, "successful": 0}
+        date_buckets[day]["total"] += 1
+        if outcome == "deployed":
+            date_buckets[day]["successful"] += 1
+    sorted_days = sorted(date_buckets.keys())
+    last_7 = sorted_days[-7:]
+    data_points = []
+    for day in last_7:
+        bucket = date_buckets[day]
+        total = bucket["total"]
+        successful = bucket["successful"]
+        rate = round(successful / total, 2) if total > 0 else 0.0
+        data_points.append({"date": day, "total": total, "successful": successful, "rate": rate})
+    return {
+        "bar_color_success": "#22c55e",
+        "bar_color_failure": "#ef4444",
+        "bar_width_px": 32,
+        "bar_gap_px": 6,
+        "chart_height_px": 120,
+        "point_count": 7,
+        "data_points": data_points,
     }
 
 
