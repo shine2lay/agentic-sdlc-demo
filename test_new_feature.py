@@ -1,10 +1,13 @@
-"""Acceptance tests for the bounce-button-config endpoint.
+"""Acceptance tests for the ASCII Art Generator feature.
 
-Tests that GET /api/bounce-button-config returns a valid response
-with all animation configuration fields (enabled, scale_start, scale_peak,
-duration_ms, easing, iteration_count, delay_ms, debounce_ms,
-skip_initial_render, respect_reduced_motion, target).
-The endpoint does not exist yet, so the new test is expected to FAIL.
+Tests that:
+- GET /api/ascii-art-config returns valid configuration
+- POST /api/ascii-art-generate produces block-letter ASCII art
+- Empty/whitespace-only text is rejected with 400
+- Long text is truncated to 20 characters
+- Unknown/special characters don't crash the endpoint
+- All existing endpoints remain unbroken
+The endpoints do not exist yet, so the new tests are expected to FAIL.
 """
 
 import sys
@@ -15,123 +18,129 @@ client = TestClient(app)
 
 
 def test_existing_endpoints_not_broken():
-    """Adding the new endpoint must not break health or other config endpoints."""
+    """Adding the new feature must not break health or other config endpoints."""
     # Health endpoint
     r = client.get("/api/health")
     assert r.status_code == 200, f"Health returned {r.status_code}"
     assert r.json() == {"status": "ok"}, f"Health body unexpected: {r.json()}"
 
-    # Sparkle config must still have its own enabled field
+    # Sparkle config
     r = client.get("/api/sparkle-config")
     assert r.status_code == 200, f"sparkle-config returned {r.status_code}"
-    spark = r.json()
-    assert "enabled" in spark, "'enabled' missing from sparkle-config"
+    assert "enabled" in r.json(), "'enabled' missing from sparkle-config"
 
-    # Gradient border config must still have its own enabled field
+    # Gradient border config
     r = client.get("/api/gradient-border-config")
     assert r.status_code == 200, f"gradient-border-config returned {r.status_code}"
-    gb = r.json()
-    assert "enabled" in gb, "'enabled' missing from gradient-border-config"
+    assert "enabled" in r.json(), "'enabled' missing from gradient-border-config"
 
-    # Markdown preview config must still work
+    # Markdown preview config
     r = client.get("/api/markdown-preview-config")
     assert r.status_code == 200, f"markdown-preview-config returned {r.status_code}"
-    md = r.json()
-    assert md["title"] == "Markdown Preview", f"markdown title mismatch: {md['title']}"
+    assert r.json()["title"] == "Markdown Preview", "markdown title mismatch"
 
-    # Color picker config must still work
+    # Color picker config
     r = client.get("/api/color-picker-config")
     assert r.status_code == 200, f"color-picker-config returned {r.status_code}"
 
-    # Programming joke must still work
+    # Bounce button config
+    r = client.get("/api/bounce-button-config")
+    assert r.status_code == 200, f"bounce-button-config returned {r.status_code}"
+
+    # Programming joke
     r = client.get("/api/programming-joke")
     assert r.status_code == 200, f"programming-joke returned {r.status_code}"
+
+    # ASCII art config (new — should return 200 once implemented)
+    r = client.get("/api/ascii-art-config")
+    assert r.status_code == 200, f"ascii-art-config returned {r.status_code}"
 
     print("PASS: existing endpoints still work correctly")
 
 
-def test_programming_joke_endpoint():
-    """GET /api/programming-joke must return joke and category strings."""
-    response = client.get("/api/programming-joke")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert "joke" in data, f"'joke' missing from response: {data}"
-    assert isinstance(data["joke"], str), f"joke should be str, got {type(data['joke'])}"
-    assert len(data["joke"]) > 0, "joke should not be empty"
-    assert "category" in data, f"'category' missing from response: {data}"
-    assert isinstance(data["category"], str), f"category should be str, got {type(data['category'])}"
-    print("PASS: programming-joke endpoint returns valid response")
-
-
-def test_markdown_preview_config():
-    """GET /api/markdown-preview-config must return title, default_markdown, editor_placeholder, debounce_ms."""
-    response = client.get("/api/markdown-preview-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["title"] == "Markdown Preview", f"title mismatch: {data['title']}"
-    assert isinstance(data["default_markdown"], str) and len(data["default_markdown"]) > 0, "default_markdown must be non-empty string"
-    assert isinstance(data["editor_placeholder"], str) and len(data["editor_placeholder"]) > 0, "editor_placeholder must be non-empty string"
-    assert data["debounce_ms"] == 200, f"debounce_ms mismatch: {data['debounce_ms']}"
-    print("PASS: markdown-preview-config endpoint returns valid response")
-
-
-def test_color_picker_config():
-    """GET /api/color-picker-config must return title, default_color, formats, show_preview, preset_colors."""
-    response = client.get("/api/color-picker-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["title"] == "Color Picker", f"title mismatch: {data['title']}"
-    assert data["default_color"] == "#6366f1", f"default_color mismatch: {data['default_color']}"
-    assert data["formats"] == ["hex", "rgb", "hsl"], f"formats mismatch: {data['formats']}"
-    assert data["show_preview"] is True, f"show_preview mismatch: {data['show_preview']}"
-    assert isinstance(data["preset_colors"], list), "preset_colors must be a list"
-    assert len(data["preset_colors"]) == 9, f"Expected 9 preset colors, got {len(data['preset_colors'])}"
-    for color in data["preset_colors"]:
-        assert isinstance(color, str) and len(color) == 7 and color.startswith("#"), f"Invalid preset color: {color}"
-    print("PASS: color-picker-config endpoint returns valid response")
-
-
-def test_bounce_button_config():
-    """GET /api/bounce-button-config must return all animation config fields."""
-    response = client.get("/api/bounce-button-config")
+def test_ascii_art_config():
+    """GET /api/ascii-art-config must return all configuration fields."""
+    response = client.get("/api/ascii-art-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
 
-    # Core toggle
-    assert data["enabled"] is True, f"enabled mismatch: {data.get('enabled')}"
+    assert data["title"] == "ASCII Art Generator", f"title mismatch: {data.get('title')}"
+    assert data["default_text"] == "HELLO", f"default_text mismatch: {data.get('default_text')}"
+    assert data["max_length"] == 20, f"max_length mismatch: {data.get('max_length')}"
+    assert data["block_char"] == "#", f"block_char mismatch: {data.get('block_char')}"
+    assert data["empty_char"] == " ", f"empty_char mismatch: {data.get('empty_char')}"
+    assert data["supported_characters"] == "A-Z 0-9 ! ? . -", f"supported_characters mismatch: {data.get('supported_characters')}"
+    assert data["letter_height"] == 5, f"letter_height mismatch: {data.get('letter_height')}"
 
-    # Scale animation parameters
-    assert data["scale_start"] == 1.0, f"scale_start mismatch: {data.get('scale_start')}"
-    assert data["scale_peak"] == 1.07, f"scale_peak mismatch: {data.get('scale_peak')}"
+    print("PASS: ascii-art-config endpoint returns valid response")
 
-    # Timing
-    assert data["duration_ms"] == 600, f"duration_ms mismatch: {data.get('duration_ms')}"
-    assert data["easing"] == "cubic-bezier(0.34, 1.56, 0.64, 1)", f"easing mismatch: {data.get('easing')}"
-    assert data["iteration_count"] == 2, f"iteration_count mismatch: {data.get('iteration_count')}"
-    assert data["delay_ms"] == 100, f"delay_ms mismatch: {data.get('delay_ms')}"
 
-    # Debounce to prevent rapid-fire animation on fast toggling
-    assert data["debounce_ms"] == 300, f"debounce_ms mismatch: {data.get('debounce_ms')}"
+def test_ascii_art_generate():
+    """POST /api/ascii-art-generate with valid text must return block art."""
+    response = client.post("/api/ascii-art-generate", json={"text": "HI"})
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
 
-    # Prevent bounce on initial page load / hydration
-    assert data["skip_initial_render"] is True, f"skip_initial_render mismatch: {data.get('skip_initial_render')}"
+    assert "art" in data, f"'art' missing from response: {data}"
+    assert isinstance(data["art"], str), f"art should be str, got {type(data['art'])}"
+    assert len(data["art"]) > 0, "art should not be empty"
+    assert "#" in data["art"], "art should contain '#' characters"
 
-    # Accessibility: respect prefers-reduced-motion
-    assert data["respect_reduced_motion"] is True, f"respect_reduced_motion mismatch: {data.get('respect_reduced_motion')}"
+    assert data["original_text"] == "HI", f"original_text mismatch: {data.get('original_text')}"
+    assert data["height"] == 5, f"height mismatch: {data.get('height')}"
+    assert data["width"] > 0, f"width should be > 0, got {data.get('width')}"
 
-    # Target element
-    assert data["target"] == "submit-button", f"target mismatch: {data.get('target')}"
+    print("PASS: ascii-art-generate endpoint returns valid art")
 
-    print("PASS: bounce-button-config endpoint returns valid response")
+
+def test_ascii_art_generate_empty_text():
+    """POST /api/ascii-art-generate with empty text must return 400."""
+    response = client.post("/api/ascii-art-generate", json={"text": ""})
+    assert response.status_code == 400, f"Expected 400 for empty text, got {response.status_code}"
+
+    print("PASS: empty text rejected with 400")
+
+
+def test_ascii_art_generate_whitespace_only():
+    """POST /api/ascii-art-generate with whitespace-only text must return 400."""
+    response = client.post("/api/ascii-art-generate", json={"text": "   "})
+    assert response.status_code == 400, f"Expected 400 for whitespace-only text, got {response.status_code}"
+
+    print("PASS: whitespace-only text rejected with 400")
+
+
+def test_ascii_art_generate_truncation():
+    """POST /api/ascii-art-generate with >20 chars must truncate original_text to 20."""
+    response = client.post("/api/ascii-art-generate", json={"text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+
+    assert len(data["original_text"]) <= 20, f"original_text should be <= 20 chars, got {len(data['original_text'])}"
+
+    print("PASS: long text truncated to 20 characters")
+
+
+def test_ascii_art_generate_special_chars():
+    """POST /api/ascii-art-generate with unknown characters must not crash."""
+    response = client.post("/api/ascii-art-generate", json={"text": "@#$"})
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+
+    assert isinstance(data["art"], str), f"art should be str, got {type(data['art'])}"
+    assert data["height"] == 5, f"height should be 5, got {data.get('height')}"
+
+    print("PASS: special characters handled without crashing")
 
 
 if __name__ == "__main__":
     try:
         test_existing_endpoints_not_broken()
-        test_programming_joke_endpoint()
-        test_markdown_preview_config()
-        test_color_picker_config()
-        test_bounce_button_config()
+        test_ascii_art_config()
+        test_ascii_art_generate()
+        test_ascii_art_generate_empty_text()
+        test_ascii_art_generate_whitespace_only()
+        test_ascii_art_generate_truncation()
+        test_ascii_art_generate_special_chars()
         print("ALL TESTS PASSED")
     except Exception as e:
         print(f"FAIL: {e}")

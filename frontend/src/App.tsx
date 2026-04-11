@@ -5,6 +5,7 @@ import { RunPage } from './pages/RunPage';
 import { TicTacToePage } from './pages/TicTacToePage';
 import { MarkdownPreviewPage } from './pages/MarkdownPreviewPage';
 import { ColorPickerPage } from './pages/ColorPickerPage';
+import { AsciiArtPage } from './pages/AsciiArtPage';
 import { fetchVersion } from './api';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/games/tictactoe" element={<TicTacToePage />} />
           <Route path="/tools/markdown" element={<MarkdownPreviewPage />} />
           <Route path="/tools/colors" element={<ColorPickerPage />} />
+          <Route path="/tools/ascii" element={<AsciiArtPage />} />
         </Routes>
       </main>
       <footer className="bg-[var(--temper-panel)] border-t border-[var(--temper-border)] text-[var(--temper-text-muted)] text-sm py-2 text-center">
@@ -38,6 +40,7 @@ export default function App() {
           {' · '}<a href="/games/tictactoe" className="text-[var(--temper-accent)] hover:underline">Tic-Tac-Toe</a>
           {' · '}<a href="/tools/markdown" className="text-[var(--temper-accent)] hover:underline">Markdown</a>
           {' · '}<a href="/tools/colors" className="text-[var(--temper-accent)] hover:underline">Colors</a>
+          {' · '}<a href="/tools/ascii" className="text-[var(--temper-accent)] hover:underline">ASCII Art</a>
         </p>
         {versionInfo?.version && (
           <p className="text-xs mt-1 text-[var(--temper-text-muted)]">

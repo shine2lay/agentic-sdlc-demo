@@ -171,6 +171,27 @@ class BounceButtonConfigResponse(BaseModel):
     target: str
 
 
+class AsciiArtConfigResponse(BaseModel):
+    title: str
+    default_text: str
+    max_length: int
+    block_char: str
+    empty_char: str
+    supported_characters: str
+    letter_height: int
+
+
+class AsciiArtRequest(BaseModel):
+    text: str
+
+
+class AsciiArtResponse(BaseModel):
+    art: str
+    original_text: str
+    width: int
+    height: int
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -190,6 +211,75 @@ PROGRAMMING_JOKES = [
     {"joke": "There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors.", "category": "general"},
     {"joke": "It works on my machine. Then we'll ship your machine.", "category": "devops"},
 ]
+
+
+ASCII_BLOCK_LETTERS = {
+    'A': [' ### ', '#   #', '#####', '#   #', '#   #'],
+    'B': ['#### ', '#   #', '#### ', '#   #', '#### '],
+    'C': [' ####', '#    ', '#    ', '#    ', ' ####'],
+    'D': ['#### ', '#   #', '#   #', '#   #', '#### '],
+    'E': ['#####', '#    ', '###  ', '#    ', '#####'],
+    'F': ['#####', '#    ', '###  ', '#    ', '#    '],
+    'G': [' ####', '#    ', '# ###', '#   #', ' ### '],
+    'H': ['#   #', '#   #', '#####', '#   #', '#   #'],
+    'I': ['#####', '  #  ', '  #  ', '  #  ', '#####'],
+    'J': ['#####', '    #', '    #', '#   #', ' ### '],
+    'K': ['#   #', '#  # ', '###  ', '#  # ', '#   #'],
+    'L': ['#    ', '#    ', '#    ', '#    ', '#####'],
+    'M': ['#   #', '## ##', '# # #', '#   #', '#   #'],
+    'N': ['#   #', '##  #', '# # #', '#  ##', '#   #'],
+    'O': [' ### ', '#   #', '#   #', '#   #', ' ### '],
+    'P': ['#### ', '#   #', '#### ', '#    ', '#    '],
+    'Q': [' ### ', '#   #', '# # #', '#  # ', ' ## #'],
+    'R': ['#### ', '#   #', '#### ', '#  # ', '#   #'],
+    'S': [' ####', '#    ', ' ### ', '    #', '#### '],
+    'T': ['#####', '  #  ', '  #  ', '  #  ', '  #  '],
+    'U': ['#   #', '#   #', '#   #', '#   #', ' ### '],
+    'V': ['#   #', '#   #', '#   #', ' # # ', '  #  '],
+    'W': ['#   #', '#   #', '# # #', '## ##', '#   #'],
+    'X': ['#   #', ' # # ', '  #  ', ' # # ', '#   #'],
+    'Y': ['#   #', ' # # ', '  #  ', '  #  ', '  #  '],
+    'Z': ['#####', '   # ', '  #  ', ' #   ', '#####'],
+    '0': [' ### ', '#   #', '#   #', '#   #', ' ### '],
+    '1': ['  #  ', ' ##  ', '  #  ', '  #  ', '#####'],
+    '2': [' ### ', '#   #', '  ## ', ' #   ', '#####'],
+    '3': [' ### ', '#   #', '  ## ', '#   #', ' ### '],
+    '4': ['#   #', '#   #', '#####', '    #', '    #'],
+    '5': ['#####', '#    ', '#### ', '    #', '#### '],
+    '6': [' ### ', '#    ', '#### ', '#   #', ' ### '],
+    '7': ['#####', '    #', '   # ', '  #  ', '  #  '],
+    '8': [' ### ', '#   #', ' ### ', '#   #', ' ### '],
+    '9': [' ### ', '#   #', ' ####', '    #', ' ### '],
+    ' ': ['     ', '     ', '     ', '     ', '     '],
+    '!': ['  #  ', '  #  ', '  #  ', '     ', '  #  '],
+    '?': [' ### ', '#   #', '  ## ', '     ', '  #  '],
+    '.': ['     ', '     ', '     ', '     ', '  #  '],
+    '-': ['     ', '     ', '#####', '     ', '     '],
+}
+
+BLANK_CHAR = ['     ', '     ', '     ', '     ', '     ']
+
+
+def generate_block_art(text: str, block_char: str, empty_char: str) -> str:
+    """Generate block-letter ASCII art from text."""
+    text = text.upper()
+    # Strip control characters
+    text = text.replace('\n', '').replace('\r', '').replace('\t', '')
+    # Truncate to 20 characters
+    text = text[:20]
+
+    patterns = [ASCII_BLOCK_LETTERS.get(ch, BLANK_CHAR) for ch in text]
+
+    if not patterns:
+        return '\n'.join([''] * 5)
+
+    rows = []
+    for row_idx in range(5):
+        row = ' '.join(p[row_idx] for p in patterns)
+        row = row.replace('#', block_char).replace(' ', empty_char)
+        rows.append(row)
+
+    return '\n'.join(rows)
 
 
 # ── Utility endpoints ──────────────────────────────────────────────
@@ -343,6 +433,39 @@ def get_bounce_button_config():
         "skip_initial_render": True,
         "respect_reduced_motion": True,
         "target": "submit-button",
+    }
+
+
+@router.get("/ascii-art-config", response_model=AsciiArtConfigResponse)
+def get_ascii_art_config():
+    """Return configuration for the ASCII art generator tool."""
+    return {
+        "title": "ASCII Art Generator",
+        "default_text": "HELLO",
+        "max_length": 20,
+        "block_char": "#",
+        "empty_char": " ",
+        "supported_characters": "A-Z 0-9 ! ? . -",
+        "letter_height": 5,
+    }
+
+
+@router.post("/ascii-art-generate", response_model=AsciiArtResponse)
+def generate_ascii_art_endpoint(body: AsciiArtRequest):
+    """Generate block-letter ASCII art from input text."""
+    stripped = body.text.strip()
+    if not stripped:
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    art = generate_block_art(stripped, "#", " ")
+    width = len(art.split('\n')[0]) if art else 0
+    original = stripped.upper()[:20]
+
+    return {
+        "art": art,
+        "original_text": original,
+        "width": width,
+        "height": 5,
     }
 
 

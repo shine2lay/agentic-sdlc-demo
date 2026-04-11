@@ -172,6 +172,39 @@ export async function fetchBounceButtonConfig(): Promise<BounceButtonConfig> {
   return res.json();
 }
 
+export interface AsciiArtConfig {
+  title: string;
+  default_text: string;
+  max_length: number;
+  block_char: string;
+  empty_char: string;
+  supported_characters: string;
+  letter_height: number;
+}
+
+export interface AsciiArtResponse {
+  art: string;
+  original_text: string;
+  width: number;
+  height: number;
+}
+
+export async function fetchAsciiArtConfig(): Promise<AsciiArtConfig> {
+  const res = await fetch(`${API_URL}/api/ascii-art-config`);
+  if (!res.ok) throw new Error(`Fetch ASCII art config failed: ${res.status}`);
+  return res.json();
+}
+
+export async function generateAsciiArt(text: string): Promise<AsciiArtResponse> {
+  const res = await fetch(`${API_URL}/api/ascii-art-generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`Generate ASCII art failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
