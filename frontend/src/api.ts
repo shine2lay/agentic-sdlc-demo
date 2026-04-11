@@ -13,7 +13,7 @@ export async function fetchVersion(): Promise<{ version: string; deployed_by: st
 }
 
 export interface TypewriterLine { text: string; css_class: string; }
-export interface TypewriterConfig { lines: TypewriterLine[]; speed_ms: number; start_delay_ms: number; }
+export interface TypewriterConfig { enabled: boolean; lines: TypewriterLine[]; speed_ms: number; start_delay_ms: number; }
 
 export async function fetchTypewriterConfig(): Promise<TypewriterConfig> {
   const res = await fetch(`${API_URL}/api/typewriter-config`);

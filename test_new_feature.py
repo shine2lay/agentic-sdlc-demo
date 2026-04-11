@@ -1,8 +1,9 @@
-"""Acceptance tests for the gradient-border-config endpoint.
+"""Acceptance tests for the typewriter-config 'enabled' field.
 
-Tests the GET /api/gradient-border-config endpoint that should return
-gradient border animation configuration for the suggestion input box.
-The endpoint does not exist yet, so these tests are expected to FAIL.
+Tests that GET /api/typewriter-config returns an 'enabled' boolean,
+matching the pattern used by every other UI config endpoint
+(back-to-top, parallax, sparkle, gradient-border).
+The field does not exist yet, so these tests are expected to FAIL.
 """
 
 import sys
@@ -12,47 +13,48 @@ from server.app import app
 client = TestClient(app)
 
 
-def test_gradient_border_config_returns_all_fields():
-    """GET /api/gradient-border-config returns 200 with all 7 expected fields."""
-    response = client.get("/api/gradient-border-config")
+def test_typewriter_config_has_enabled_field():
+    """GET /api/typewriter-config must include 'enabled: true' plus all existing fields."""
+    response = client.get("/api/typewriter-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
-    expected_fields = {
-        "enabled", "colors", "angle_deg",
-        "animation_duration_ms", "border_width_px",
-        "border_radius", "target",
-    }
-    missing = expected_fields - set(data.keys())
-    assert not missing, f"Missing fields: {missing}"
-    # Validate types
-    assert isinstance(data["enabled"], bool), "enabled should be bool"
-    assert isinstance(data["colors"], list), "colors should be a list"
-    assert all(isinstance(c, str) for c in data["colors"]), "each color should be a string"
-    assert isinstance(data["angle_deg"], int), "angle_deg should be int"
-    assert isinstance(data["animation_duration_ms"], int), "animation_duration_ms should be int"
-    assert isinstance(data["border_width_px"], int), "border_width_px should be int"
-    assert isinstance(data["border_radius"], str), "border_radius should be str"
-    assert isinstance(data["target"], str), "target should be str"
-    print("PASS: gradient-border-config returns all fields with correct types")
+    # Core assertion: 'enabled' field must exist and be a boolean
+    assert "enabled" in data, f"'enabled' field missing from response: {data}"
+    assert isinstance(data["enabled"], bool), f"'enabled' should be bool, got {type(data['enabled'])}"
+    assert data["enabled"] is True, f"'enabled' should default to True, got {data['enabled']}"
+    # Verify existing fields are still present and unchanged
+    assert "lines" in data, "'lines' field missing"
+    assert len(data["lines"]) == 2, f"Expected 2 lines, got {len(data['lines'])}"
+    assert data["speed_ms"] == 80, f"Expected speed_ms=80, got {data['speed_ms']}"
+    assert data["start_delay_ms"] == 300, f"Expected start_delay_ms=300, got {data['start_delay_ms']}"
+    print("PASS: typewriter-config returns enabled field with all existing fields intact")
 
 
 def test_existing_endpoints_not_broken():
-    """Verify /api/health and /api/sparkle-config still work (no regression)."""
-    health = client.get("/api/health")
-    assert health.status_code == 200, f"health: expected 200, got {health.status_code}"
-    assert health.json() == {"status": "ok"}, f"health: unexpected body {health.json()}"
+    """Adding the enabled field must not break health or other config endpoints."""
+    # Health endpoint
+    r = client.get("/api/health")
+    assert r.status_code == 200, f"Health returned {r.status_code}"
+    assert r.json() == {"status": "ok"}, f"Health body unexpected: {r.json()}"
 
-    sparkle = client.get("/api/sparkle-config")
-    assert sparkle.status_code == 200, f"sparkle-config: expected 200, got {sparkle.status_code}"
-    sparkle_data = sparkle.json()
-    assert "enabled" in sparkle_data, "sparkle-config missing 'enabled' field"
-    assert "colors" in sparkle_data, "sparkle-config missing 'colors' field"
-    print("PASS: existing endpoints (health, sparkle-config) not broken")
+    # Sparkle config must still have its own enabled field
+    r = client.get("/api/sparkle-config")
+    assert r.status_code == 200, f"sparkle-config returned {r.status_code}"
+    spark = r.json()
+    assert "enabled" in spark, "'enabled' missing from sparkle-config"
+
+    # Gradient border config must still have its own enabled field
+    r = client.get("/api/gradient-border-config")
+    assert r.status_code == 200, f"gradient-border-config returned {r.status_code}"
+    gb = r.json()
+    assert "enabled" in gb, "'enabled' missing from gradient-border-config"
+
+    print("PASS: existing endpoints still work correctly")
 
 
 if __name__ == "__main__":
     try:
-        test_gradient_border_config_returns_all_fields()
+        test_typewriter_config_has_enabled_field()
         test_existing_endpoints_not_broken()
         print("ALL TESTS PASSED")
     except Exception as e:

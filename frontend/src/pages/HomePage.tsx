@@ -400,7 +400,7 @@ export function HomePage() {
             </span>
           </div>
 
-          {typewriterConfig ? (
+          {typewriterConfig?.enabled ? (
             <TypewriterHeading
               lines={typewriterConfig.lines}
               speedMs={typewriterConfig.speed_ms}

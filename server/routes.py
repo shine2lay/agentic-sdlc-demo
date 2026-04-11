@@ -78,6 +78,7 @@ class TypewriterLine(BaseModel):
 
 
 class TypewriterConfigResponse(BaseModel):
+    enabled: bool
     lines: List[TypewriterLine]
     speed_ms: int
     start_delay_ms: int
@@ -142,6 +143,7 @@ def version():
 def get_typewriter_config():
     """Return configuration for the homepage typewriter animation."""
     return {
+        "enabled": True,
         "lines": [
             {"text": "Describe a change.", "css_class": ""},
             {"text": "Watch AI build it.", "css_class": "accent"},
