@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, type Run, type TypewriterConfig, type BackToTopConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
@@ -477,6 +477,9 @@ export function HomePage() {
                 const outcome = getOutcome(run);
                 const task = (run.inputs as Record<string, unknown>)?.task_description as string || run.workflow;
 
+                const pendingRuns = filteredRuns.filter(r => getOutcome(r) === 'pending');
+                const queuePos = outcome === 'pending' ? pendingRuns.indexOf(run) + 1 : 0;
+
                 const styles: Record<RunOutcome, { border: string; leftBorder: string; icon: string; iconColor: string }> = {
                   deployed: { border: 'border-emerald-500/30 hover:border-emerald-500/60', leftBorder: 'border-l-emerald-500', icon: '✓', iconColor: 'text-emerald-400' },
                   rejected: { border: 'border-amber-500/30 hover:border-amber-500/50', leftBorder: 'border-l-amber-500', icon: '⊘', iconColor: 'text-amber-400' },
@@ -486,42 +489,61 @@ export function HomePage() {
                 };
                 const s = styles[outcome];
 
+                const prevOutcome = index > 0 ? getOutcome(filteredRuns[index - 1]) : null;
+                const showPendingHeader = filter === 'all' && outcome === 'pending' && prevOutcome !== 'pending';
+                const showCompletedHeader = filter === 'all' && outcome !== 'running' && outcome !== 'pending'
+                  && (prevOutcome === 'running' || prevOutcome === 'pending');
+
                 return (
-                  <div
-                    key={run.id}
-                    className={`bg-[var(--temper-surface)] border rounded-lg p-5 transition-all duration-200 animate-fade-in ${
-                      outcome === 'running'
-                        ? 'border-l-[4px] border-[var(--temper-accent)]/40 border-l-[var(--temper-accent)] shadow-[0_0_12px_rgba(125,211,252,0.1)]'
-                        : `border-l-[3px] ${s.border} ${s.leftBorder}`
-                    } ${clickable ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20' : ''}`}
-                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
-                    onClick={() => clickable && navigate(`/runs/${run.id}`)}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className={`flex items-center justify-center w-5 h-5 rounded-full text-xs ${
-                        outcome === 'deployed' ? 'bg-emerald-500/20 text-emerald-400' :
-                        outcome === 'rejected' ? 'bg-amber-500/20 text-amber-400' :
-                        outcome === 'failed' ? 'bg-red-500/20 text-red-400' :
-                        outcome === 'running' ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] animate-pulse' :
-                        'bg-[var(--temper-border)] text-[var(--temper-text-dim)]'
-                      }`}>{s.icon}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-[var(--temper-text)] line-clamp-2 leading-snug">
-                          {task}
-                        </p>
-                        {outcome === 'rejected' && run.workflow_output?.reason && (
-                          <p className="text-xs text-amber-400/70 mt-1 line-clamp-1">
-                            {run.workflow_output.reason}
+                  <React.Fragment key={run.id}>
+                    {showPendingHeader && (
+                      <div className="col-span-2 flex items-center gap-2 mt-2 mb-1">
+                        <span className="text-xs font-medium text-[var(--temper-text-dim)]">Queue ({pendingRuns.length})</span>
+                        <div className="flex-1 h-px bg-[var(--temper-border)]" />
+                      </div>
+                    )}
+                    {showCompletedHeader && (
+                      <div className="col-span-2 flex items-center gap-2 mt-2 mb-1">
+                        <span className="text-xs font-medium text-[var(--temper-text-dim)]">Completed</span>
+                        <div className="flex-1 h-px bg-[var(--temper-border)]" />
+                      </div>
+                    )}
+                    <div
+                      className={`bg-[var(--temper-surface)] border rounded-lg p-5 transition-all duration-200 animate-fade-in ${
+                        outcome === 'running'
+                          ? 'border-l-[4px] border-[var(--temper-accent)]/40 border-l-[var(--temper-accent)] shadow-[0_0_12px_rgba(125,211,252,0.1)]'
+                          : `border-l-[3px] ${s.border} ${s.leftBorder}`
+                      } ${clickable ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20' : ''}`}
+                      style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+                      onClick={() => clickable && navigate(`/runs/${run.id}`)}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className={`flex items-center justify-center w-5 h-5 rounded-full text-xs shrink-0 mt-0.5 ${
+                          outcome === 'deployed' ? 'bg-emerald-500/20 text-emerald-400' :
+                          outcome === 'rejected' ? 'bg-amber-500/20 text-amber-400' :
+                          outcome === 'failed' ? 'bg-red-500/20 text-red-400' :
+                          outcome === 'running' ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] animate-pulse' :
+                          'bg-[var(--temper-border)] text-[var(--temper-text-dim)]'
+                        }`}>{outcome === 'pending' ? `#${queuePos}` : s.icon}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-[var(--temper-text)] line-clamp-2 leading-snug">
+                            {task}
                           </p>
-                        )}
-                        <p className="text-xs text-[var(--temper-text-dim)] mt-2">
-                          {formatDuration(run.duration_seconds)}
-                          {run.duration_seconds ? ' · ' : ''}
-                          {formatTimeAgo(run.created_at)}
-                        </p>
+                          {outcome === 'rejected' && run.workflow_output?.reason && (
+                            <p className="text-xs text-amber-400/70 mt-1 line-clamp-1">
+                              {run.workflow_output.reason}
+                            </p>
+                          )}
+                          <p className="text-xs text-[var(--temper-text-dim)] mt-2">
+                            {outcome === 'pending' ? `Queue position #${queuePos}` :
+                             outcome === 'running' ? 'Processing...' :
+                             `${formatDuration(run.duration_seconds)}${run.duration_seconds ? ' · ' : ''}`}
+                            {outcome !== 'pending' && formatTimeAgo(run.created_at)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </React.Fragment>
                 );
               })}
             </div>
