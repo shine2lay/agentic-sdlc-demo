@@ -329,4 +329,31 @@ body {
   font-weight: 600;
   letter-spacing: 0.5px;
 }
+/* Confetti burst animation for deploy transitions */
+.confetti-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 10;
+}
+.confetti-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--confetti-size);
+  height: var(--confetti-size);
+  background: var(--confetti-color);
+  border-radius: 2px;
+  animation: confetti-pop var(--confetti-duration, 1500ms) ease-out var(--confetti-delay) forwards;
+  opacity: 0;
+}
+@keyframes confetti-pop {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 1; }
+  20% { opacity: 1; transform: translate(calc(var(--confetti-x) * 0.3), calc(var(--confetti-y) * 0.3)) rotate(calc(var(--confetti-rotate) * 0.3)) scale(1); }
+  100% { transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotate)) scale(0.5); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti-particle { animation: none; display: none; }
+}
 /* rebuild 1775872704 */

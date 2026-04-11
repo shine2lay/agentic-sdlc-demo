@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -273,6 +273,10 @@ export function HomePage() {
   const [gradientBorderConfig, setGradientBorderConfig] = useState<GradientBorderConfig | null>(null);
   const [suggestionsCount, setSuggestionsCount] = useState<number>(0);
   const [programmingJoke, setProgrammingJoke] = useState<ProgrammingJoke | null>(null);
+  const [confettiConfig, setConfettiConfig] = useState<ConfettiConfig | null>(null);
+  const [confettiRunIds, setConfettiRunIds] = useState<Set<string>>(new Set());
+  const prevOutcomesRef = useRef<Map<string, RunOutcome>>(new Map());
+  const isFirstFetchRef = useRef(true);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
@@ -290,6 +294,7 @@ export function HomePage() {
     fetchGradientBorderConfig().then(setGradientBorderConfig).catch(() => {});
     fetchSuggestionsCount().then((d) => setSuggestionsCount(d.total_suggestions)).catch(() => {});
     fetchProgrammingJoke().then(setProgrammingJoke).catch(() => {});
+    fetchConfettiConfig().then(setConfettiConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -299,6 +304,44 @@ export function HomePage() {
     }, 10000);
     return () => { clearInterval(interval); clearInterval(suggestionsInterval); };
   }, []);
+
+  useEffect(() => {
+    if (!confettiConfig || !confettiConfig.enabled) return;
+    if (confettiConfig.respect_reduced_motion && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (isFirstFetchRef.current) {
+      isFirstFetchRef.current = false;
+      const map = new Map<string, RunOutcome>();
+      runs.forEach(r => map.set(r.id, getOutcome(r)));
+      prevOutcomesRef.current = map;
+      return;
+    }
+    const newConfetti: string[] = [];
+    runs.forEach(r => {
+      const prev = prevOutcomesRef.current.get(r.id);
+      const curr = getOutcome(r);
+      if (prev === 'running' && curr === 'deployed') {
+        newConfetti.push(r.id);
+      }
+    });
+    const capped = newConfetti.slice(0, confettiConfig.max_concurrent);
+    const map = new Map<string, RunOutcome>();
+    runs.forEach(r => map.set(r.id, getOutcome(r)));
+    prevOutcomesRef.current = map;
+    if (capped.length > 0) {
+      setConfettiRunIds(prev => {
+        const next = new Set(prev);
+        capped.forEach(id => next.add(id));
+        return next;
+      });
+      setTimeout(() => {
+        setConfettiRunIds(prev => {
+          const next = new Set(prev);
+          capped.forEach(id => next.delete(id));
+          return next;
+        });
+      }, confettiConfig.duration_ms);
+    }
+  }, [runs, confettiConfig]);
 
   useEffect(() => {
     if (!backToTopConfig?.enabled || !scrollRef.current) return;
@@ -643,7 +686,7 @@ export function HomePage() {
                       </div>
                     )}
                     <div
-                      className={`bg-[var(--temper-surface)] border rounded-lg p-5 transition-all duration-200 animate-fade-in ${
+                      className={`relative overflow-visible bg-[var(--temper-surface)] border rounded-lg p-5 transition-all duration-200 animate-fade-in ${
                         outcome === 'running'
                           ? 'border-l-[4px] border-[var(--temper-accent)]/40 border-l-[var(--temper-accent)] shadow-[0_0_12px_rgba(125,211,252,0.1)]'
                           : `border-l-[3px] ${s.border} ${s.leftBorder}`
@@ -651,6 +694,24 @@ export function HomePage() {
                       style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
                       onClick={() => clickable && navigate(`/runs/${run.id}`)}
                     >
+                      {confettiRunIds.has(run.id) && confettiConfig && (
+                        <div className="confetti-burst" aria-hidden="true">
+                          {Array.from({ length: confettiConfig.particle_count }, (_, i) => (
+                            <span
+                              key={i}
+                              className="confetti-particle"
+                              style={{
+                                '--confetti-color': confettiConfig.colors[i % confettiConfig.colors.length],
+                                '--confetti-delay': `${Math.random() * 300}ms`,
+                                '--confetti-x': `${(Math.random() - 0.5) * confettiConfig.spread_px * 2}px`,
+                                '--confetti-y': `${-Math.random() * confettiConfig.spread_px * 1.5}px`,
+                                '--confetti-size': `${confettiConfig.size_range[0] + Math.random() * (confettiConfig.size_range[1] - confettiConfig.size_range[0])}px`,
+                                '--confetti-rotate': `${Math.random() * 360}deg`,
+                              } as React.CSSProperties}
+                            />
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-start gap-2">
                         <span className={`flex items-center justify-center w-5 h-5 rounded-full text-xs shrink-0 mt-0.5 ${
                           outcome === 'deployed' ? 'bg-emerald-500/20 text-emerald-400' :

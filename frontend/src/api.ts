@@ -172,6 +172,30 @@ export async function fetchBounceButtonConfig(): Promise<BounceButtonConfig> {
   return res.json();
 }
 
+export interface ConfettiConfig {
+  enabled: boolean;
+  particle_count: number;
+  duration_ms: number;
+  spread_px: number;
+  colors: string[];
+  gravity: number;
+  drift: number;
+  size_range: number[];
+  shapes: string[];
+  trigger: string;
+  trigger_from: string;
+  trigger_to: string;
+  respect_reduced_motion: boolean;
+  target: string;
+  max_concurrent: number;
+}
+
+export async function fetchConfettiConfig(): Promise<ConfettiConfig> {
+  const res = await fetch(`${API_URL}/api/confetti-config`);
+  if (!res.ok) throw new Error(`Fetch confetti config failed: ${res.status}`);
+  return res.json();
+}
+
 export interface AsciiArtConfig {
   title: string;
   default_text: string;

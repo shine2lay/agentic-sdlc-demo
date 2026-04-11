@@ -171,6 +171,24 @@ class BounceButtonConfigResponse(BaseModel):
     target: str
 
 
+class ConfettiConfigResponse(BaseModel):
+    enabled: bool
+    particle_count: int
+    duration_ms: int
+    spread_px: int
+    colors: List[str]
+    gravity: float
+    drift: float
+    size_range: List[int]
+    shapes: List[str]
+    trigger: str
+    trigger_from: str
+    trigger_to: str
+    respect_reduced_motion: bool
+    target: str
+    max_concurrent: int
+
+
 class AsciiArtConfigResponse(BaseModel):
     title: str
     default_text: str
@@ -433,6 +451,28 @@ def get_bounce_button_config():
         "skip_initial_render": True,
         "respect_reduced_motion": True,
         "target": "submit-button",
+    }
+
+
+@router.get("/confetti-config", response_model=ConfettiConfigResponse)
+def get_confetti_config():
+    """Return configuration for the confetti burst animation on run card deploy transitions."""
+    return {
+        "enabled": True,
+        "particle_count": 40,
+        "duration_ms": 1500,
+        "spread_px": 60,
+        "colors": ["#34d399", "#6366f1", "#fbbf24", "#ec4899", "#3b82f6"],
+        "gravity": 0.8,
+        "drift": 0.5,
+        "size_range": [4, 8],
+        "shapes": ["circle", "square"],
+        "trigger": "status-change",
+        "trigger_from": "running",
+        "trigger_to": "deployed",
+        "respect_reduced_motion": True,
+        "target": "run-card",
+        "max_concurrent": 3,
     }
 
 
