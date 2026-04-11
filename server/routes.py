@@ -157,6 +157,20 @@ class ColorPickerConfigResponse(BaseModel):
     preset_colors: List[str]
 
 
+class BounceButtonConfigResponse(BaseModel):
+    enabled: bool
+    scale_start: float
+    scale_peak: float
+    duration_ms: int
+    easing: str
+    iteration_count: int
+    delay_ms: int
+    debounce_ms: int
+    skip_initial_render: bool
+    respect_reduced_motion: bool
+    target: str
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -312,6 +326,24 @@ def get_color_picker_config():
 def get_programming_joke():
     """Return a random programming joke."""
     return random.choice(PROGRAMMING_JOKES)
+
+
+@router.get("/bounce-button-config", response_model=BounceButtonConfigResponse)
+def get_bounce_button_config():
+    """Return configuration for the gentle bounce animation on the submit button when it becomes enabled."""
+    return {
+        "enabled": True,
+        "scale_start": 1.0,
+        "scale_peak": 1.07,
+        "duration_ms": 600,
+        "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "iteration_count": 2,
+        "delay_ms": 100,
+        "debounce_ms": 300,
+        "skip_initial_render": True,
+        "respect_reduced_motion": True,
+        "target": "submit-button",
+    }
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────

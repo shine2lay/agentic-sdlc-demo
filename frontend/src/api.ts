@@ -152,6 +152,26 @@ export async function fetchProgrammingJoke(): Promise<ProgrammingJoke> {
   return res.json();
 }
 
+export interface BounceButtonConfig {
+  enabled: boolean;
+  scale_start: number;
+  scale_peak: number;
+  duration_ms: number;
+  easing: string;
+  iteration_count: number;
+  delay_ms: number;
+  debounce_ms: number;
+  skip_initial_render: boolean;
+  respect_reduced_motion: boolean;
+  target: string;
+}
+
+export async function fetchBounceButtonConfig(): Promise<BounceButtonConfig> {
+  const res = await fetch(`${API_URL}/api/bounce-button-config`);
+  if (!res.ok) throw new Error(`Fetch bounce button config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
