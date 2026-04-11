@@ -105,6 +105,17 @@ class ParallaxConfigResponse(BaseModel):
     easing: str
 
 
+class SparkleConfigResponse(BaseModel):
+    enabled: bool
+    particle_count: int
+    duration_ms: int
+    spread_px: int
+    colors: List[str]
+    repeat_interval_ms: int
+    size_px: int
+    target: str
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -157,6 +168,21 @@ def get_parallax_config():
         "max_offset_px": 120,
         "direction": "up",
         "easing": "ease-out",
+    }
+
+
+@router.get("/sparkle-config", response_model=SparkleConfigResponse)
+def get_sparkle_config():
+    """Return configuration for the sparkle animation on the shipped count."""
+    return {
+        "enabled": True,
+        "particle_count": 6,
+        "duration_ms": 1200,
+        "spread_px": 18,
+        "colors": ["#fbbf24", "#f59e0b", "#d97706", "#ffffff"],
+        "repeat_interval_ms": 4000,
+        "size_px": 6,
+        "target": "shipped",
     }
 
 

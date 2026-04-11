@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -269,6 +269,7 @@ export function HomePage() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [backToTopConfig, setBackToTopConfig] = useState<BackToTopConfig | null>(null);
   const [parallaxConfig, setParallaxConfig] = useState<ParallaxConfig | null>(null);
+  const [sparkleConfig, setSparkleConfig] = useState<SparkleConfig | null>(null);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
@@ -282,6 +283,7 @@ export function HomePage() {
     fetchTypewriterConfig().then(setTypewriterConfig).catch(() => {});
     fetchBackToTopConfig().then(setBackToTopConfig).catch(() => {});
     fetchParallaxConfig().then(setParallaxConfig).catch(() => {});
+    fetchSparkleConfig().then(setSparkleConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -412,9 +414,36 @@ export function HomePage() {
 
           {stats.total > 0 && (
             <div className="flex gap-8 justify-center text-center mt-2">
-              <div>
+              <div className="relative">
                 <div className="text-2xl font-bold text-emerald-400">{stats.deployed}</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">changes shipped</div>
+                {sparkleConfig?.enabled && stats.deployed > 0 && (
+                  <span className="absolute inset-0 pointer-events-none">
+                    {Array.from({ length: sparkleConfig.particle_count }).map((_, i) => {
+                      const angle = i * (2 * Math.PI / sparkleConfig.particle_count);
+                      const tx = Math.cos(angle) * sparkleConfig.spread_px;
+                      const ty = Math.sin(angle) * sparkleConfig.spread_px;
+                      return (
+                        <span
+                          key={i}
+                          className="animate-sparkle-pop absolute"
+                          style={{
+                            top: '50%',
+                            left: '50%',
+                            width: sparkleConfig.size_px,
+                            height: sparkleConfig.size_px,
+                            borderRadius: '50%',
+                            backgroundColor: sparkleConfig.colors[i % sparkleConfig.colors.length],
+                            '--sparkle-tx': `${tx}px`,
+                            '--sparkle-ty': `${ty}px`,
+                            animationDelay: `${(i * sparkleConfig.repeat_interval_ms) / sparkleConfig.particle_count}ms`,
+                            animationDuration: `${sparkleConfig.duration_ms}ms`,
+                          } as React.CSSProperties}
+                        />
+                      );
+                    })}
+                  </span>
+                )}
               </div>
               <div>
                 <div className="text-2xl font-bold text-[var(--temper-text)]">8</div>

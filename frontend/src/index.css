@@ -131,6 +131,16 @@ body {
   animation: pulse-glow-sm 1.5s ease-in-out infinite;
 }
 
+@keyframes sparkle-pop {
+  0% { opacity: 0; transform: scale(0) translate(0, 0); }
+  40% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.5) translate(var(--sparkle-tx), var(--sparkle-ty)); }
+}
+
+.animate-sparkle-pop {
+  animation: sparkle-pop 1.2s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-glow {
     animation: none;
@@ -139,6 +149,10 @@ body {
   .animate-pulse-glow-sm {
     animation: none;
     box-shadow: 0 0 6px 2px rgba(125, 211, 252, 0.4);
+  }
+  .animate-sparkle-pop {
+    animation: none;
+    display: none;
   }
 }
 

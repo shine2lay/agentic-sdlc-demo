@@ -55,6 +55,23 @@ export async function fetchParallaxConfig(): Promise<ParallaxConfig> {
   return res.json();
 }
 
+export interface SparkleConfig {
+  enabled: boolean;
+  particle_count: number;
+  duration_ms: number;
+  spread_px: number;
+  colors: string[];
+  repeat_interval_ms: number;
+  size_px: number;
+  target: string;
+}
+
+export async function fetchSparkleConfig(): Promise<SparkleConfig> {
+  const res = await fetch(`${API_URL}/api/sparkle-config`);
+  if (!res.ok) throw new Error(`Fetch sparkle config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
