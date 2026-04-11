@@ -116,6 +116,16 @@ class SparkleConfigResponse(BaseModel):
     target: str
 
 
+class GradientBorderConfigResponse(BaseModel):
+    enabled: bool
+    colors: List[str]
+    angle_deg: int
+    animation_duration_ms: int
+    border_width_px: int
+    border_radius: str
+    target: str
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -183,6 +193,20 @@ def get_sparkle_config():
         "repeat_interval_ms": 4000,
         "size_px": 6,
         "target": "shipped",
+    }
+
+
+@router.get("/gradient-border-config", response_model=GradientBorderConfigResponse)
+def get_gradient_border_config():
+    """Return configuration for the gradient border animation on the suggestion input box."""
+    return {
+        "enabled": True,
+        "colors": ["#6366f1", "#8b5cf6", "#ec4899", "#6366f1"],
+        "angle_deg": 135,
+        "animation_duration_ms": 6000,
+        "border_width_px": 2,
+        "border_radius": "0.5rem",
+        "target": "suggest-input",
     }
 
 

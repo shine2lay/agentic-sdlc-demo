@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -270,6 +270,7 @@ export function HomePage() {
   const [backToTopConfig, setBackToTopConfig] = useState<BackToTopConfig | null>(null);
   const [parallaxConfig, setParallaxConfig] = useState<ParallaxConfig | null>(null);
   const [sparkleConfig, setSparkleConfig] = useState<SparkleConfig | null>(null);
+  const [gradientBorderConfig, setGradientBorderConfig] = useState<GradientBorderConfig | null>(null);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
@@ -284,6 +285,7 @@ export function HomePage() {
     fetchBackToTopConfig().then(setBackToTopConfig).catch(() => {});
     fetchParallaxConfig().then(setParallaxConfig).catch(() => {});
     fetchSparkleConfig().then(setSparkleConfig).catch(() => {});
+    fetchGradientBorderConfig().then(setGradientBorderConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -473,14 +475,29 @@ export function HomePage() {
             Describe any visual or functional change. The AI pipeline handles the rest.
           </p>
 
-          <textarea
-            className="w-full bg-[var(--temper-bg)] border border-[var(--temper-border)] rounded-lg px-4 py-3 text-sm text-[var(--temper-text)] placeholder-[var(--temper-text-dim)] resize-none focus:outline-none focus:border-[var(--temper-accent)] transition-colors"
-            placeholder='e.g. "Add a gradient banner at the top that says Powered by AI"'
-            value={suggestion}
-            onChange={(e) => setSuggestion(e.target.value)}
-            rows={3}
-            disabled={submitState === 'submitting'}
-          />
+          <div
+            className="gradient-border-wrap rounded-lg"
+            style={
+              gradientBorderConfig?.enabled
+                ? {
+                    padding: `${gradientBorderConfig.border_width_px}px`,
+                    background: `linear-gradient(${gradientBorderConfig.angle_deg}deg, ${gradientBorderConfig.colors.join(', ')})`,
+                    backgroundSize: '300% 300%',
+                    animation: `gradient-shift ${gradientBorderConfig.animation_duration_ms}ms ease infinite`,
+                    borderRadius: gradientBorderConfig.border_radius,
+                  }
+                : {}
+            }
+          >
+            <textarea
+              className="w-full bg-[var(--temper-bg)] rounded-md px-4 py-3 text-sm text-[var(--temper-text)] placeholder-[var(--temper-text-dim)] resize-none focus:outline-none transition-colors"
+              placeholder='e.g. "Add a gradient banner at the top that says Powered by AI"'
+              value={suggestion}
+              onChange={(e) => setSuggestion(e.target.value)}
+              rows={3}
+              disabled={submitState === 'submitting'}
+            />
+          </div>
 
           <div className="flex justify-between items-center mt-3">
             <p className="text-xs text-[var(--temper-text-dim)]">

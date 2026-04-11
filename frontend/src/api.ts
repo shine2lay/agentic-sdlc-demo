@@ -72,6 +72,22 @@ export async function fetchSparkleConfig(): Promise<SparkleConfig> {
   return res.json();
 }
 
+export interface GradientBorderConfig {
+  enabled: boolean;
+  colors: string[];
+  angle_deg: number;
+  animation_duration_ms: number;
+  border_width_px: number;
+  border_radius: string;
+  target: string;
+}
+
+export async function fetchGradientBorderConfig(): Promise<GradientBorderConfig> {
+  const res = await fetch(`${API_URL}/api/gradient-border-config`);
+  if (!res.ok) throw new Error(`Fetch gradient border config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
