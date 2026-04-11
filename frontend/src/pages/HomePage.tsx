@@ -29,6 +29,56 @@ function getOutcome(run: Run): RunOutcome {
   return 'pending';
 }
 
+function useAnimatedNumber(target: number, duration = 300): number {
+  const [display, setDisplay] = useState(target);
+  const prev = useRef(target);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(target);
+      prev.current = target;
+      return;
+    }
+    const from = prev.current;
+    if (from === target) return;
+    prev.current = target;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - (1 - t) ** 3;
+      setDisplay(Math.round(from + (target - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return display;
+}
+
+function AnimatedTab({ tab, count, isActive, onClick }: {
+  tab: string; count: number; isActive: boolean; onClick: () => void;
+}) {
+  const animatedCount = useAnimatedNumber(count);
+  const prefixes: Record<string, string> = {
+    all: 'All',
+    deployed: '\u2713 Shipped',
+    rejected: '\u2298 Rejected',
+    failed: '\u2717 Failed',
+  };
+  return (
+    <button
+      onClick={onClick}
+      className={`text-xs font-medium transition-colors pb-1 ${
+        isActive
+          ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]'
+          : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)] border-b-2 border-transparent'
+      }`}
+    >
+      {prefixes[tab]} ({animatedCount})
+    </button>
+  );
+}
+
 function StatusDot({ status }: { status: string }) {
   const c: Record<string, string> = { ok: 'bg-emerald-500', error: 'bg-red-500', loading: 'bg-gray-500' };
   return <span className={`inline-block w-2 h-2 rounded-full ${c[status] ?? 'bg-gray-500'}`} />;
@@ -419,24 +469,14 @@ export function HomePage() {
           <div className="flex gap-3">
             {(['all', 'deployed', 'rejected', 'failed'] as const).map((tab) => {
               const count = tab === 'all' ? runs.length : runs.filter(r => getOutcome(r) === tab).length;
-              const labels: Record<string, string> = {
-                all: `All (${count})`,
-                deployed: `✓ Shipped (${count})`,
-                rejected: `⊘ Rejected (${count})`,
-                failed: `✗ Failed (${count})`,
-              };
               return (
-                <button
+                <AnimatedTab
                   key={tab}
+                  tab={tab}
+                  count={count}
+                  isActive={filter === tab}
                   onClick={() => { setFilter(tab); setShowCount(8); }}
-                  className={`text-xs font-medium transition-colors pb-1 ${
-                    filter === tab
-                      ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]'
-                      : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)] border-b-2 border-transparent'
-                  }`}
-                >
-                  {labels[tab]}
-                </button>
+                />
               );
             })}
           </div>
