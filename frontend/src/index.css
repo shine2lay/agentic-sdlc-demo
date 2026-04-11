@@ -121,10 +121,24 @@ body {
   animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
+/* Smaller pulsing glow for small dots (6-10px) */
+@keyframes pulse-glow-sm {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(125, 211, 252, 0.3); }
+  50% { box-shadow: 0 0 8px 3px rgba(125, 211, 252, 0.5); }
+}
+
+.animate-pulse-glow-sm {
+  animation: pulse-glow-sm 1.5s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-glow {
     animation: none;
     box-shadow: 0 0 12px 4px rgba(125, 211, 252, 0.4);
+  }
+  .animate-pulse-glow-sm {
+    animation: none;
+    box-shadow: 0 0 6px 2px rgba(125, 211, 252, 0.4);
   }
 }
 

@@ -153,7 +153,9 @@ export function WorkflowSummaryBar() {
                   className={
                     isSlowest
                       ? 'rounded-full shrink-0 ring-2 ring-yellow-400/70 ring-offset-1 ring-offset-temper-panel'
-                      : 'rounded-full shrink-0'
+                      : s.status === 'running'
+                        ? 'rounded-full shrink-0 animate-pulse-glow-sm'
+                        : 'rounded-full shrink-0'
                   }
                   style={{
                     backgroundColor: pipelineColor(s.status),

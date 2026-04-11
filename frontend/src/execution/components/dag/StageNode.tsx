@@ -85,7 +85,7 @@ export const StageNode = memo(function StageNode({ data }: NodeProps) {
       <div className="px-3 py-2 flex items-center gap-2">
         {/* Status dot */}
         <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
+          className={`w-2.5 h-2.5 rounded-full shrink-0${currentStage.status === 'running' ? ' animate-pulse-glow-sm' : ''}`}
           style={{ backgroundColor: statusDotColor }}
         />
 
@@ -173,7 +173,7 @@ export const StageNode = memo(function StageNode({ data }: NodeProps) {
                   aria-pressed={i === safeIndex}
                 >
                   <span
-                    className="rounded-full shrink-0 transition-all"
+                    className={`rounded-full shrink-0 transition-all${iter.stage.status === 'running' && i === safeIndex ? ' animate-pulse-glow-sm' : ''}`}
                     style={{
                       backgroundColor: dotColor,
                       width: i === safeIndex ? 8 : 6,
