@@ -103,6 +103,17 @@ export async function fetchTicTacToeConfig(): Promise<TicTacToeConfig> {
   return res.json();
 }
 
+export interface SuggestionsCountData {
+  total_suggestions: number;
+  poll_interval_ms: number;
+}
+
+export async function fetchSuggestionsCount(): Promise<SuggestionsCountData> {
+  const res = await fetch(`${API_URL}/api/suggestions-count`);
+  if (!res.ok) throw new Error(`Fetch suggestions count failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -271,6 +271,7 @@ export function HomePage() {
   const [parallaxConfig, setParallaxConfig] = useState<ParallaxConfig | null>(null);
   const [sparkleConfig, setSparkleConfig] = useState<SparkleConfig | null>(null);
   const [gradientBorderConfig, setGradientBorderConfig] = useState<GradientBorderConfig | null>(null);
+  const [suggestionsCount, setSuggestionsCount] = useState<number>(0);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
@@ -286,11 +287,15 @@ export function HomePage() {
     fetchParallaxConfig().then(setParallaxConfig).catch(() => {});
     fetchSparkleConfig().then(setSparkleConfig).catch(() => {});
     fetchGradientBorderConfig().then(setGradientBorderConfig).catch(() => {});
+    fetchSuggestionsCount().then((d) => setSuggestionsCount(d.total_suggestions)).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
     }, 5000);
-    return () => clearInterval(interval);
+    const suggestionsInterval = setInterval(() => {
+      fetchSuggestionsCount().then((d) => setSuggestionsCount(d.total_suggestions)).catch(() => {});
+    }, 10000);
+    return () => { clearInterval(interval); clearInterval(suggestionsInterval); };
   }, []);
 
   useEffect(() => {
@@ -419,6 +424,10 @@ export function HomePage() {
 
           {stats.total > 0 && (
             <div className="flex gap-8 justify-center text-center mt-2">
+              <div>
+                <div className="text-2xl font-bold text-[var(--temper-accent)]">{suggestionsCount}</div>
+                <div className="text-xs text-[var(--temper-text-dim)]">suggestions processed</div>
+              </div>
               <div className="relative">
                 <div className="text-2xl font-bold text-emerald-400">{stats.deployed}</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">changes shipped</div>

@@ -9,7 +9,7 @@ from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from server.database import get_session
 from server.models import Run, RunEvent
@@ -136,6 +136,11 @@ class TicTacToeConfigResponse(BaseModel):
     title: str
 
 
+class SuggestionsCountResponse(BaseModel):
+    total_suggestions: int
+    poll_interval_ms: int
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -232,6 +237,15 @@ def get_tictactoe_config():
         "empty_cell": "",
         "title": "Tic-Tac-Toe",
     }
+
+
+@router.get("/suggestions-count", response_model=SuggestionsCountResponse)
+def get_suggestions_count(session: Session = Depends(get_session)):
+    """Return the total number of suggestions processed."""
+    count = session.exec(
+        select(func.count(Run.id)).where(Run.workflow == SDLC_WORKFLOW)
+    ).one()
+    return {"total_suggestions": count, "poll_interval_ms": 10000}
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────
