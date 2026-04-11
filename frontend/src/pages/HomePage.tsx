@@ -359,6 +359,9 @@ export function HomePage() {
       const pa = STATUS_PRIORITY[getOutcome(a)];
       const pb = STATUS_PRIORITY[getOutcome(b)];
       if (pa !== pb) return pa - pb;
+      // Pending: oldest first (matches worker FIFO order)
+      // Everything else: newest first
+      if (getOutcome(a) === 'pending') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return sorted.slice(0, showCount);
