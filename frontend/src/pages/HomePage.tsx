@@ -163,11 +163,11 @@ function pickRandom<T>(pool: T[], count: number): T[] {
 const HERO_QUOTES = [
   { text: "Any fool can write code that a computer can understand. Good programmers write code that humans can understand.", author: "Kent Beck" },
   { text: "Make it work, make it right, make it fast.", author: "Kent Beck" },
-  { text: "The best way to predict the future is to implement it.", author: "David Heinemeier Hansson" },
+  { text: "The best way to predict the future is to invent it.", author: "Alan Kay" },
   { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
   { text: "I'm not a great programmer; I'm just a good programmer with great habits.", author: "Kent Beck" },
   { text: "Before software can be reusable it first has to be usable.", author: "Ralph Johnson" },
-  { text: "Continuous improvement is better than delayed perfection.", author: "Mark Twain" },
+  { text: "Simplicity is prerequisite for reliability.", author: "Edsger Dijkstra" },
   { text: "Code is like humor. When you have to explain it, it's bad.", author: "Cory House" },
 ];
 
@@ -532,6 +532,7 @@ export function HomePage() {
                 <button
                   key={ex}
                   onClick={() => setSuggestion(ex)}
+                  title={ex}
                   className="text-xs px-3 py-1.5 rounded-full bg-[var(--temper-bg)] border border-[var(--temper-border)] text-[var(--temper-text-muted)] hover:text-[var(--temper-text)] hover:border-[var(--temper-accent)]/50 transition-colors truncate max-w-[280px]"
                 >
                   {ex}
@@ -565,7 +566,7 @@ export function HomePage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-3" role="status" aria-busy="true">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="status" aria-busy="true">
             <span className="sr-only">Loading recent changes</span>
             {Array.from({length: 8}, (_, i) => (
               <div key={i} className="bg-[var(--temper-surface)] border border-l-[3px] border-[var(--temper-border)] rounded-lg p-4">
@@ -593,7 +594,7 @@ export function HomePage() {
                 <div className="flex-1 h-px bg-[var(--temper-border)]" />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {filteredRuns.map((run, index) => {
                 const clickable = isClickable(run);
                 const outcome = getOutcome(run);
@@ -619,13 +620,13 @@ export function HomePage() {
                 return (
                   <React.Fragment key={run.id}>
                     {showPendingHeader && (
-                      <div className="col-span-2 flex items-center gap-2 mt-2 mb-1">
+                      <div className="col-span-1 sm:col-span-2 flex items-center gap-2 mt-2 mb-1">
                         <span className="text-xs font-medium text-[var(--temper-text-dim)]">Queue ({pendingRuns.length})</span>
                         <div className="flex-1 h-px bg-[var(--temper-border)]" />
                       </div>
                     )}
                     {showCompletedHeader && (
-                      <div className="col-span-2 flex items-center gap-2 mt-2 mb-1">
+                      <div className="col-span-1 sm:col-span-2 flex items-center gap-2 mt-2 mb-1">
                         <span className="text-xs font-medium text-[var(--temper-text-dim)]">Completed</span>
                         <div className="flex-1 h-px bg-[var(--temper-border)]" />
                       </div>
