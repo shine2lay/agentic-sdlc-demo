@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 import uuid
 from datetime import UTC, datetime
 from typing import Any, List
@@ -141,6 +142,27 @@ class SuggestionsCountResponse(BaseModel):
     poll_interval_ms: int
 
 
+class ProgrammingJokeResponse(BaseModel):
+    joke: str
+    category: str
+
+
+PROGRAMMING_JOKES = [
+    {"joke": "Why do programmers prefer dark mode? Because light attracts bugs.", "category": "general"},
+    {"joke": "There are only 10 types of people in the world: those who understand binary and those who don't.", "category": "general"},
+    {"joke": "A SQL query walks into a bar, walks up to two tables, and asks: Can I join you?", "category": "databases"},
+    {"joke": "Why do Java developers wear glasses? Because they can't C#.", "category": "languages"},
+    {"joke": "How many programmers does it take to change a light bulb? None, that's a hardware problem.", "category": "general"},
+    {"joke": "The best thing about a Boolean is that even if you're wrong, you're only off by a bit.", "category": "general"},
+    {"joke": "A programmer's wife tells him: Go to the store and buy a gallon of milk. If they have eggs, get a dozen. He comes back with 12 gallons of milk.", "category": "general"},
+    {"joke": "Why was the JavaScript developer sad? Because he didn't Node how to Express himself.", "category": "javascript"},
+    {"joke": "What's a programmer's favorite hangout place? Foo Bar.", "category": "general"},
+    {"joke": "To understand what recursion is, you must first understand recursion.", "category": "general"},
+    {"joke": "There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors.", "category": "general"},
+    {"joke": "It works on my machine. Then we'll ship your machine.", "category": "devops"},
+]
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -246,6 +268,12 @@ def get_suggestions_count(session: Session = Depends(get_session)):
         select(func.count(Run.id)).where(Run.workflow == SDLC_WORKFLOW)
     ).one()
     return {"total_suggestions": count, "poll_interval_ms": 10000}
+
+
+@router.get("/programming-joke", response_model=ProgrammingJokeResponse)
+def get_programming_joke():
+    """Return a random programming joke."""
+    return random.choice(PROGRAMMING_JOKES)
 
 
 # ── Suggestion endpoint ───────────────────────────────────────────

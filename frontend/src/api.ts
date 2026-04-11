@@ -114,6 +114,17 @@ export async function fetchSuggestionsCount(): Promise<SuggestionsCountData> {
   return res.json();
 }
 
+export interface ProgrammingJoke {
+  joke: string;
+  category: string;
+}
+
+export async function fetchProgrammingJoke(): Promise<ProgrammingJoke> {
+  const res = await fetch(`${API_URL}/api/programming-joke`);
+  if (!res.ok) throw new Error(`Fetch programming joke failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

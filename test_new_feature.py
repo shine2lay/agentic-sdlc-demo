@@ -1,7 +1,7 @@
-"""Acceptance tests for the suggestions-count endpoint.
+"""Acceptance tests for the programming-joke endpoint.
 
-Tests that GET /api/suggestions-count returns a valid response
-with total_suggestions (int >= 0) and poll_interval_ms (int == 10000).
+Tests that GET /api/programming-joke returns a valid response
+with joke (non-empty string) and category (string).
 The endpoint does not exist yet, so the new test is expected to FAIL.
 """
 
@@ -34,24 +34,23 @@ def test_existing_endpoints_not_broken():
     print("PASS: existing endpoints still work correctly")
 
 
-def test_suggestions_count_endpoint():
-    """GET /api/suggestions-count must return total_suggestions and poll_interval_ms."""
-    response = client.get("/api/suggestions-count")
+def test_programming_joke_endpoint():
+    """GET /api/programming-joke must return joke and category strings."""
+    response = client.get("/api/programming-joke")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
-    assert "total_suggestions" in data, f"'total_suggestions' missing from response: {data}"
-    assert isinstance(data["total_suggestions"], int), f"total_suggestions should be int, got {type(data['total_suggestions'])}"
-    assert data["total_suggestions"] >= 0, f"total_suggestions should be >= 0, got {data['total_suggestions']}"
-    assert "poll_interval_ms" in data, f"'poll_interval_ms' missing from response: {data}"
-    assert isinstance(data["poll_interval_ms"], int), f"poll_interval_ms should be int, got {type(data['poll_interval_ms'])}"
-    assert data["poll_interval_ms"] == 10000, f"Expected poll_interval_ms=10000, got {data['poll_interval_ms']}"
-    print("PASS: suggestions-count endpoint returns valid response")
+    assert "joke" in data, f"'joke' missing from response: {data}"
+    assert isinstance(data["joke"], str), f"joke should be str, got {type(data['joke'])}"
+    assert len(data["joke"]) > 0, "joke should not be empty"
+    assert "category" in data, f"'category' missing from response: {data}"
+    assert isinstance(data["category"], str), f"category should be str, got {type(data['category'])}"
+    print("PASS: programming-joke endpoint returns valid response")
 
 
 if __name__ == "__main__":
     try:
         test_existing_endpoints_not_broken()
-        test_suggestions_count_endpoint()
+        test_programming_joke_endpoint()
         print("ALL TESTS PASSED")
     except Exception as e:
         print(f"FAIL: {e}")

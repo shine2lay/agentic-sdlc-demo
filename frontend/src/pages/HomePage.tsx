@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -272,6 +272,7 @@ export function HomePage() {
   const [sparkleConfig, setSparkleConfig] = useState<SparkleConfig | null>(null);
   const [gradientBorderConfig, setGradientBorderConfig] = useState<GradientBorderConfig | null>(null);
   const [suggestionsCount, setSuggestionsCount] = useState<number>(0);
+  const [programmingJoke, setProgrammingJoke] = useState<ProgrammingJoke | null>(null);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
@@ -288,6 +289,7 @@ export function HomePage() {
     fetchSparkleConfig().then(setSparkleConfig).catch(() => {});
     fetchGradientBorderConfig().then(setGradientBorderConfig).catch(() => {});
     fetchSuggestionsCount().then((d) => setSuggestionsCount(d.total_suggestions)).catch(() => {});
+    fetchProgrammingJoke().then(setProgrammingJoke).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -745,6 +747,11 @@ export function HomePage() {
               Built with <a href="https://github.com/shine2lay/temper-ai" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Temper AI</a> —
               an open-source multi-agent workflow orchestration engine.
             </p>
+            {programmingJoke && (
+              <p className="text-xs italic text-[var(--temper-text-dim)] pt-4 border-t border-[var(--temper-border)]">
+                {programmingJoke.joke}
+              </p>
+            )}
           </div>
         </div>
       </section>
