@@ -1,7 +1,7 @@
-"""Acceptance tests for the programming-joke endpoint.
+"""Acceptance tests for the markdown-preview-config endpoint.
 
-Tests that GET /api/programming-joke returns a valid response
-with joke (non-empty string) and category (string).
+Tests that GET /api/markdown-preview-config returns a valid response
+with title, default_markdown, editor_placeholder, and debounce_ms.
 The endpoint does not exist yet, so the new test is expected to FAIL.
 """
 
@@ -47,10 +47,23 @@ def test_programming_joke_endpoint():
     print("PASS: programming-joke endpoint returns valid response")
 
 
+def test_markdown_preview_config():
+    """GET /api/markdown-preview-config must return title, default_markdown, editor_placeholder, debounce_ms."""
+    response = client.get("/api/markdown-preview-config")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+    assert data["title"] == "Markdown Preview", f"title mismatch: {data['title']}"
+    assert isinstance(data["default_markdown"], str) and len(data["default_markdown"]) > 0, "default_markdown must be non-empty string"
+    assert isinstance(data["editor_placeholder"], str) and len(data["editor_placeholder"]) > 0, "editor_placeholder must be non-empty string"
+    assert data["debounce_ms"] == 200, f"debounce_ms mismatch: {data['debounce_ms']}"
+    print("PASS: markdown-preview-config endpoint returns valid response")
+
+
 if __name__ == "__main__":
     try:
         test_existing_endpoints_not_broken()
         test_programming_joke_endpoint()
+        test_markdown_preview_config()
         print("ALL TESTS PASSED")
     except Exception as e:
         print(f"FAIL: {e}")

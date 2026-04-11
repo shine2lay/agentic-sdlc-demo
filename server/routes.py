@@ -142,6 +142,13 @@ class SuggestionsCountResponse(BaseModel):
     poll_interval_ms: int
 
 
+class MarkdownPreviewConfigResponse(BaseModel):
+    title: str
+    default_markdown: str
+    editor_placeholder: str
+    debounce_ms: int
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -268,6 +275,17 @@ def get_suggestions_count(session: Session = Depends(get_session)):
         select(func.count(Run.id)).where(Run.workflow == SDLC_WORKFLOW)
     ).one()
     return {"total_suggestions": count, "poll_interval_ms": 10000}
+
+
+@router.get("/markdown-preview-config", response_model=MarkdownPreviewConfigResponse)
+def get_markdown_preview_config():
+    """Return configuration for the markdown preview tool."""
+    return {
+        "title": "Markdown Preview",
+        "default_markdown": "# Hello\n\nStart typing markdown here...\n\n- Supports **bold** and *italic*\n- Lists and headings\n- Code blocks and more",
+        "editor_placeholder": "Type your markdown here...",
+        "debounce_ms": 200,
+    }
 
 
 @router.get("/programming-joke", response_model=ProgrammingJokeResponse)

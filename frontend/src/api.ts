@@ -103,6 +103,19 @@ export async function fetchTicTacToeConfig(): Promise<TicTacToeConfig> {
   return res.json();
 }
 
+export interface MarkdownPreviewConfig {
+  title: string;
+  default_markdown: string;
+  editor_placeholder: string;
+  debounce_ms: number;
+}
+
+export async function fetchMarkdownPreviewConfig(): Promise<MarkdownPreviewConfig> {
+  const res = await fetch(`${API_URL}/api/markdown-preview-config`);
+  if (!res.ok) throw new Error(`Fetch markdown preview config failed: ${res.status}`);
+  return res.json();
+}
+
 export interface SuggestionsCountData {
   total_suggestions: number;
   poll_interval_ms: number;
