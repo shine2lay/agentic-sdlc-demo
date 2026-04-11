@@ -6,7 +6,7 @@ import { formatTimeAgo } from '../execution/utils';
 // ── Helpers ────────────────────────────────────────────────
 
 function formatDuration(s: number | null | undefined): string {
-  if (!s) return '';
+  if (s == null) return '';
   if (s < 60) return `${Math.round(s)}s`;
   return `${Math.round(s / 60)}m ${Math.round(s % 60)}s`;
 }
@@ -86,7 +86,7 @@ function StatusDot({ status }: { status: string }) {
 
 // ── Pipeline animation ─────────────────────────────────────
 
-const STAGES = ['Validate', 'Analyze', 'Plan', 'Build', 'Test', 'Review', 'Deploy', 'Verify'];
+const STAGES = ['Validate', 'Analyze', 'Plan', 'Build', 'Review', 'Push', 'Verify'];
 
 function PipelineAnimation() {
   const [active, setActive] = useState(0);
@@ -451,11 +451,11 @@ export function HomePage() {
                 )}
               </div>
               <div>
-                <div className="text-2xl font-bold text-[var(--temper-text)]">8</div>
+                <div className="text-2xl font-bold text-[var(--temper-text)]">10</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">pipeline stages</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-[var(--temper-text)]">21</div>
+                <div className="text-2xl font-bold text-[var(--temper-text)]">25</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">AI agents</div>
               </div>
             </div>
@@ -700,7 +700,7 @@ export function HomePage() {
             <p>
               There is no human in the loop. The entire process — validating the idea, writing tests first, implementing the code,
               reviewing for quality and security, pushing to GitHub, and deploying to this live site — is handled by{' '}
-              <span className="text-[var(--temper-text)]">21 specialized AI agents</span> coordinated through a multi-stage workflow.
+              <span className="text-[var(--temper-text)]">25 specialized AI agents</span> coordinated through a multi-stage workflow.
             </p>
 
             <div className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg p-4 my-4">
