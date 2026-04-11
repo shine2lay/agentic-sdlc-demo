@@ -537,6 +537,58 @@ export function HomePage() {
           </>
         )}
       </section>
+
+      {/* ── About ─────────────────────────────────────── */}
+      <section className="max-w-3xl mx-auto px-8 py-12 pb-20">
+        <div className="border-t border-[var(--temper-border)] pt-10">
+          <h2 className="text-sm font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-6">
+            About This Experiment
+          </h2>
+
+          <div className="space-y-4 text-sm text-[var(--temper-text-muted)] leading-relaxed">
+            <p>
+              This site is a live experiment in <span className="text-[var(--temper-text)]">fully autonomous software development</span>.
+              Every suggestion you submit goes through a 10-stage AI pipeline that mirrors how a real engineering team works —
+              from triage and feasibility analysis, through architecture and planning, to implementation, code review, testing,
+              and production deployment.
+            </p>
+
+            <p>
+              There is no human in the loop. The entire process — validating the idea, writing tests first, implementing the code,
+              reviewing for quality and security, pushing to GitHub, and deploying to this live site — is handled by{' '}
+              <span className="text-[var(--temper-text)]">21 specialized AI agents</span> coordinated through a multi-stage workflow.
+            </p>
+
+            <div className="bg-[var(--temper-surface)] border border-[var(--temper-border)] rounded-lg p-4 my-4">
+              <p className="text-xs text-[var(--temper-text-dim)] font-medium uppercase tracking-wide mb-3">The Pipeline</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                <div><span className="text-[var(--temper-accent)]">1.</span> <span className="text-[var(--temper-text)]">Validate</span> — 5 agents assess feasibility, safety, threats, code impact, and scope</div>
+                <div><span className="text-[var(--temper-accent)]">2.</span> <span className="text-[var(--temper-text)]">Dedup</span> — checks if the suggestion duplicates previous work</div>
+                <div><span className="text-[var(--temper-accent)]">3.</span> <span className="text-[var(--temper-text)]">Clone</span> — clones the repository into a fresh workspace</div>
+                <div><span className="text-[var(--temper-accent)]">4.</span> <span className="text-[var(--temper-text)]">Analyze</span> — reads the codebase to understand existing patterns</div>
+                <div><span className="text-[var(--temper-accent)]">5.</span> <span className="text-[var(--temper-text)]">Plan</span> — architect designs the approach, critic reviews it</div>
+                <div><span className="text-[var(--temper-accent)]">6.</span> <span className="text-[var(--temper-text)]">Build</span> — writes tests first, then implements the feature</div>
+                <div><span className="text-[var(--temper-accent)]">7.</span> <span className="text-[var(--temper-text)]">Review</span> — syntax check, test runner, diff review, security scan</div>
+                <div><span className="text-[var(--temper-accent)]">8.</span> <span className="text-[var(--temper-text)]">Push</span> — commits to GitHub and deploys to Heroku</div>
+                <div><span className="text-[var(--temper-accent)]">9.</span> <span className="text-[var(--temper-text)]">Verify</span> — health check and post-deploy verification</div>
+                <div><span className="text-[var(--temper-accent)]">10.</span> <span className="text-[var(--temper-text)]">Cleanup</span> — removes the temporary workspace</div>
+              </div>
+            </div>
+
+            <p>
+              The goal is to explore what happens when you give AI agents the full software development lifecycle —
+              not just code generation, but the entire process of deciding <em>what</em> to build, <em>how</em> to build it,
+              and <em>whether</em> it should ship. Some suggestions get rejected by the safety reviewers. Some fail code review.
+              Some make it all the way to production. That's the experiment.
+            </p>
+
+            <p className="text-[var(--temper-text-dim)]">
+              Built with <a href="https://github.com/shine2lay/temper-ai" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Temper AI</a> —
+              an open-source multi-agent workflow orchestration engine.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
     {showBackToTop && backToTopConfig && (
       <button
