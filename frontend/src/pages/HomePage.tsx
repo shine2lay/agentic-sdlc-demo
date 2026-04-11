@@ -325,11 +325,6 @@ export function HomePage() {
           <p className="text-lg text-[var(--temper-text-muted)] mt-4 max-w-xl mx-auto leading-relaxed">
             Type what you want changed on this website. AI agents will validate, plan, code, test, review, and deploy it — automatically.
           </p>
-          <p key={quoteIndex} className="text-sm italic text-[var(--temper-text-dim)] mt-3 max-w-lg mx-auto animate-fade-in">
-            "{HERO_QUOTES[quoteIndex].text}"
-            <span className="not-italic ml-2 text-[var(--temper-text-muted)]">— {HERO_QUOTES[quoteIndex].author}</span>
-          </p>
-
           <PipelineAnimation />
 
           {stats.total > 0 && (
@@ -348,6 +343,11 @@ export function HomePage() {
               </div>
             </div>
           )}
+
+          <p key={quoteIndex} className="text-sm italic text-[var(--temper-text-dim)] mt-6 max-w-lg mx-auto animate-fade-in">
+            "{HERO_QUOTES[quoteIndex].text}"
+            <span className="not-italic ml-2 text-[var(--temper-text-muted)]">— {HERO_QUOTES[quoteIndex].author}</span>
+          </p>
         </div>
       </section>
 
