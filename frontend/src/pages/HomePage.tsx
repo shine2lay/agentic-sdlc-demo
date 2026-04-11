@@ -78,12 +78,47 @@ function PipelineAnimation() {
 
 // ── Example suggestions ────────────────────────────────────
 
-const EXAMPLE_SUGGESTIONS = [
+const EXAMPLE_SUGGESTIONS_POOL = [
   '🎨 Add a gradient banner at the top of the page that says "Powered by AI"',
   '✨ Add a confetti animation that triggers when viewing a completed run',
   '🌙 Add a greeting message in the header that changes based on time of day',
   '📊 Show a mini chart on the homepage that visualizes the success rate',
   '🎯 Add a pulsing "Live" indicator next to running suggestions',
+  '📱 Make the run cards stack into a single column on mobile screens',
+  '🏷️ Add category tags to each run card like UI, API, or Docs',
+  '🖼️ Add an animated SVG background behind the hero section',
+  '💬 Show a random fun fact about AI on the homepage footer',
+  '⏱️ Show a live elapsed-time counter on running pipeline cards',
+  '🔍 Add a search bar that filters runs by keyword',
+  '📋 Add a copy suggestion button next to each run description',
+  '🌈 Let users toggle between light mode and dark mode',
+  '📈 Add a sparkline showing deployments over the past 24 hours',
+  '🤖 Add a small dancing robot animation in the footer',
+  '🎉 Show a party popper emoji burst when a suggestion is submitted',
+  '⭐ Add a star button on each run card to bookmark favorites',
+  '🔔 Add a subtle notification sound when a new run completes',
+];
+
+function pickRandom<T>(pool: T[], count: number): T[] {
+  const copy = [...pool];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+}
+
+// ── Hero quotes ───────────────────────────────────────────
+
+const HERO_QUOTES = [
+  { text: "Any fool can write code that a computer can understand. Good programmers write code that humans can understand.", author: "Kent Beck" },
+  { text: "Make it work, make it right, make it fast.", author: "Kent Beck" },
+  { text: "The best way to predict the future is to implement it.", author: "David Heinemeier Hansson" },
+  { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+  { text: "I'm not a great programmer; I'm just a good programmer with great habits.", author: "Kent Beck" },
+  { text: "Before software can be reusable it first has to be usable.", author: "Ralph Johnson" },
+  { text: "Continuous improvement is better than delayed perfection.", author: "Mark Twain" },
+  { text: "Code is like humor. When you have to explain it, it's bad.", author: "Cory House" },
 ];
 
 // ── Cache ──────────────────────────────────────────────────
@@ -163,6 +198,10 @@ function TypewriterHeading({ lines, speedMs, startDelayMs }: {
   );
 }
 
+// ── Status priority ───────────────────────────────────────
+
+const STATUS_PRIORITY: Record<RunOutcome, number> = { running: 0, pending: 1, deployed: 2, rejected: 3, failed: 4 };
+
 // ── Main ───────────────────────────────────────────────────
 
 export function HomePage() {
@@ -179,6 +218,12 @@ export function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [backToTopConfig, setBackToTopConfig] = useState<BackToTopConfig | null>(null);
+  const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
+  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
+  useEffect(() => {
+    const timer = setInterval(() => setQuoteIndex(i => (i + 1) % HERO_QUOTES.length), 12_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetchHealth().then(() => setHealth('ok')).catch(() => setHealth('error'));
@@ -223,7 +268,13 @@ export function HomePage() {
 
   const filteredRuns = useMemo(() => {
     const f = filter === 'all' ? runs : runs.filter(r => getOutcome(r) === filter);
-    return f.slice(0, showCount);
+    const sorted = [...f].sort((a, b) => {
+      const pa = STATUS_PRIORITY[getOutcome(a)];
+      const pb = STATUS_PRIORITY[getOutcome(b)];
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    return sorted.slice(0, showCount);
   }, [runs, filter, showCount]);
   const totalFiltered = filter === 'all' ? runs.length : runs.filter(r => getOutcome(r) === filter).length;
 
@@ -273,6 +324,10 @@ export function HomePage() {
           )}
           <p className="text-lg text-[var(--temper-text-muted)] mt-4 max-w-xl mx-auto leading-relaxed">
             Type what you want changed on this website. AI agents will validate, plan, code, test, review, and deploy it — automatically.
+          </p>
+          <p key={quoteIndex} className="text-sm italic text-[var(--temper-text-dim)] mt-3 max-w-lg mx-auto animate-fade-in">
+            "{HERO_QUOTES[quoteIndex].text}"
+            <span className="not-italic ml-2 text-[var(--temper-text-muted)]">— {HERO_QUOTES[quoteIndex].author}</span>
           </p>
 
           <PipelineAnimation />
@@ -341,7 +396,7 @@ export function HomePage() {
           <div className="mt-4 pt-4 border-t border-[var(--temper-border)]">
             <p className="text-xs text-[var(--temper-text-dim)] mb-2">Try an example:</p>
             <div className="flex flex-wrap gap-2">
-              {EXAMPLE_SUGGESTIONS.map((ex) => (
+              {exampleSuggestions.map((ex) => (
                 <button
                   key={ex}
                   onClick={() => setSuggestion(ex)}
@@ -374,8 +429,10 @@ export function HomePage() {
                 <button
                   key={tab}
                   onClick={() => { setFilter(tab); setShowCount(8); }}
-                  className={`text-xs font-medium transition-colors ${
-                    filter === tab ? 'text-[var(--temper-text)]' : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)]'
+                  className={`text-xs font-medium transition-colors pb-1 ${
+                    filter === tab
+                      ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]'
+                      : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)] border-b-2 border-transparent'
                   }`}
                 >
                   {labels[tab]}
@@ -407,7 +464,14 @@ export function HomePage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            {filter === 'all' && filteredRuns.some(r => getOutcome(r) === 'running') && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-block w-2 h-2 rounded-full bg-[var(--temper-accent)] animate-pulse" />
+                <span className="text-xs font-medium text-[var(--temper-accent)]">Running now</span>
+                <div className="flex-1 h-px bg-[var(--temper-border)]" />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
               {filteredRuns.map((run, index) => {
                 const clickable = isClickable(run);
                 const outcome = getOutcome(run);
@@ -425,12 +489,22 @@ export function HomePage() {
                 return (
                   <div
                     key={run.id}
-                    className={`bg-[var(--temper-surface)] border border-l-[3px] rounded-lg p-4 transition-all animate-fade-in ${s.border} ${s.leftBorder} ${clickable ? 'cursor-pointer' : ''}`}
+                    className={`bg-[var(--temper-surface)] border rounded-lg p-5 transition-all duration-200 animate-fade-in ${
+                      outcome === 'running'
+                        ? 'border-l-[4px] border-[var(--temper-accent)]/40 border-l-[var(--temper-accent)] shadow-[0_0_12px_rgba(125,211,252,0.1)]'
+                        : `border-l-[3px] ${s.border} ${s.leftBorder}`
+                    } ${clickable ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20' : ''}`}
                     style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
                     onClick={() => clickable && navigate(`/runs/${run.id}`)}
                   >
                     <div className="flex items-start gap-2">
-                      <span className={`text-sm mt-0.5 ${s.iconColor}`}>{s.icon}</span>
+                      <span className={`flex items-center justify-center w-5 h-5 rounded-full text-xs ${
+                        outcome === 'deployed' ? 'bg-emerald-500/20 text-emerald-400' :
+                        outcome === 'rejected' ? 'bg-amber-500/20 text-amber-400' :
+                        outcome === 'failed' ? 'bg-red-500/20 text-red-400' :
+                        outcome === 'running' ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] animate-pulse' :
+                        'bg-[var(--temper-border)] text-[var(--temper-text-dim)]'
+                      }`}>{s.icon}</span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-[var(--temper-text)] line-clamp-2 leading-snug">
                           {task}
