@@ -41,6 +41,20 @@ export async function fetchBackToTopConfig(): Promise<BackToTopConfig> {
   return res.json();
 }
 
+export interface ParallaxConfig {
+  enabled: boolean;
+  speed_factor: number;
+  max_offset_px: number;
+  direction: 'up' | 'down';
+  easing: string;
+}
+
+export async function fetchParallaxConfig(): Promise<ParallaxConfig> {
+  const res = await fetch(`${API_URL}/api/parallax-config`);
+  if (!res.ok) throw new Error(`Fetch parallax config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

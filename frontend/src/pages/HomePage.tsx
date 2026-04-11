@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, type Run, type TypewriterConfig, type BackToTopConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -268,6 +268,8 @@ export function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [backToTopConfig, setBackToTopConfig] = useState<BackToTopConfig | null>(null);
+  const [parallaxConfig, setParallaxConfig] = useState<ParallaxConfig | null>(null);
+  const heroBgRef = useRef<HTMLDivElement>(null);
   const exampleSuggestions = useMemo(() => pickRandom(EXAMPLE_SUGGESTIONS_POOL, 5), []);
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * HERO_QUOTES.length));
   useEffect(() => {
@@ -279,6 +281,7 @@ export function HomePage() {
     fetchHealth().then(() => setHealth('ok')).catch(() => setHealth('error'));
     fetchTypewriterConfig().then(setTypewriterConfig).catch(() => {});
     fetchBackToTopConfig().then(setBackToTopConfig).catch(() => {});
+    fetchParallaxConfig().then(setParallaxConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -303,6 +306,36 @@ export function HomePage() {
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, [backToTopConfig]);
+
+  useEffect(() => {
+    if (!parallaxConfig?.enabled || !scrollRef.current || !heroBgRef.current) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const el = scrollRef.current;
+    const bg = heroBgRef.current;
+    const { speed_factor, max_offset_px, direction } = parallaxConfig;
+    bg.style.willChange = 'transform';
+    bg.style.transition = 'transform 0.1s ' + parallaxConfig.easing;
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(() => {
+          const offset = Math.min(el.scrollTop * speed_factor, max_offset_px);
+          const sign = direction === 'up' ? -1 : 1;
+          bg.style.transform = `translateY(${sign * offset}px)`;
+          ticking = false;
+        });
+      }
+    };
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      bg.style.willChange = '';
+      bg.style.transform = '';
+      bg.style.transition = '';
+    };
+  }, [parallaxConfig]);
 
   const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: backToTopConfig?.scroll_behavior ?? 'smooth' });
@@ -350,7 +383,7 @@ export function HomePage() {
 
       {/* ── Hero ──────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--temper-accent)]/5 via-transparent to-transparent pointer-events-none" />
+        <div ref={heroBgRef} className="absolute inset-0 bg-gradient-to-b from-[var(--temper-accent)]/5 via-transparent to-transparent pointer-events-none" />
 
         <div className="max-w-4xl mx-auto px-8 pt-16 pb-8 text-center relative">
           <div className="flex items-center justify-center gap-2 mb-8">

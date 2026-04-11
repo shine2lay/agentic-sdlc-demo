@@ -97,6 +97,14 @@ class BackToTopConfigResponse(BaseModel):
     scroll_behavior: str
 
 
+class ParallaxConfigResponse(BaseModel):
+    enabled: bool
+    speed_factor: float
+    max_offset_px: int
+    direction: str
+    easing: str
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -137,6 +145,18 @@ def get_back_to_top_config():
         "border_radius": "50%",
         "transition_ms": 200,
         "scroll_behavior": "smooth",
+    }
+
+
+@router.get("/parallax-config", response_model=ParallaxConfigResponse)
+def get_parallax_config():
+    """Return configuration for the hero section parallax scroll effect."""
+    return {
+        "enabled": True,
+        "speed_factor": 0.3,
+        "max_offset_px": 120,
+        "direction": "up",
+        "easing": "ease-out",
     }
 
 
