@@ -149,6 +149,14 @@ class MarkdownPreviewConfigResponse(BaseModel):
     debounce_ms: int
 
 
+class ColorPickerConfigResponse(BaseModel):
+    title: str
+    default_color: str
+    formats: List[str]
+    show_preview: bool
+    preset_colors: List[str]
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -285,6 +293,18 @@ def get_markdown_preview_config():
         "default_markdown": "# Hello\n\nStart typing markdown here...\n\n- Supports **bold** and *italic*\n- Lists and headings\n- Code blocks and more",
         "editor_placeholder": "Type your markdown here...",
         "debounce_ms": 200,
+    }
+
+
+@router.get("/color-picker-config", response_model=ColorPickerConfigResponse)
+def get_color_picker_config():
+    """Return configuration for the color picker tool."""
+    return {
+        "title": "Color Picker",
+        "default_color": "#6366f1",
+        "formats": ["hex", "rgb", "hsl"],
+        "show_preview": True,
+        "preset_colors": ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff", "#000000"],
     }
 
 

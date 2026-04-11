@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage';
 import { RunPage } from './pages/RunPage';
 import { TicTacToePage } from './pages/TicTacToePage';
 import { MarkdownPreviewPage } from './pages/MarkdownPreviewPage';
+import { ColorPickerPage } from './pages/ColorPickerPage';
 import { fetchVersion } from './api';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/runs/:runId" element={<RunPage />} />
           <Route path="/games/tictactoe" element={<TicTacToePage />} />
           <Route path="/tools/markdown" element={<MarkdownPreviewPage />} />
+          <Route path="/tools/colors" element={<ColorPickerPage />} />
         </Routes>
       </main>
       <footer className="bg-[var(--temper-panel)] border-t border-[var(--temper-border)] text-[var(--temper-text-muted)] text-sm py-2 text-center">
@@ -35,6 +37,7 @@ export default function App() {
           <a href="https://github.com/shine2lay/agentic-sdlc-demo" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Source</a>
           {' · '}<a href="/games/tictactoe" className="text-[var(--temper-accent)] hover:underline">Tic-Tac-Toe</a>
           {' · '}<a href="/tools/markdown" className="text-[var(--temper-accent)] hover:underline">Markdown</a>
+          {' · '}<a href="/tools/colors" className="text-[var(--temper-accent)] hover:underline">Colors</a>
         </p>
         {versionInfo?.version && (
           <p className="text-xs mt-1 text-[var(--temper-text-muted)]">

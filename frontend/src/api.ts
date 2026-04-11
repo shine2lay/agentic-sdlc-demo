@@ -116,6 +116,20 @@ export async function fetchMarkdownPreviewConfig(): Promise<MarkdownPreviewConfi
   return res.json();
 }
 
+export interface ColorPickerConfig {
+  title: string;
+  default_color: string;
+  formats: string[];
+  show_preview: boolean;
+  preset_colors: string[];
+}
+
+export async function fetchColorPickerConfig(): Promise<ColorPickerConfig> {
+  const res = await fetch(`${API_URL}/api/color-picker-config`);
+  if (!res.ok) throw new Error(`Fetch color picker config failed: ${res.status}`);
+  return res.json();
+}
+
 export interface SuggestionsCountData {
   total_suggestions: number;
   poll_interval_ms: number;
