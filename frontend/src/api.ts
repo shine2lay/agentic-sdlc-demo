@@ -88,6 +88,21 @@ export async function fetchGradientBorderConfig(): Promise<GradientBorderConfig>
   return res.json();
 }
 
+export interface TicTacToeConfig {
+  board_size: number;
+  player_symbols: string[];
+  player_colors: string[];
+  winning_length: number;
+  empty_cell: string;
+  title: string;
+}
+
+export async function fetchTicTacToeConfig(): Promise<TicTacToeConfig> {
+  const res = await fetch(`${API_URL}/api/tictactoe-config`);
+  if (!res.ok) throw new Error(`Fetch tictactoe config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

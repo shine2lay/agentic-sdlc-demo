@@ -127,6 +127,15 @@ class GradientBorderConfigResponse(BaseModel):
     target: str
 
 
+class TicTacToeConfigResponse(BaseModel):
+    board_size: int
+    player_symbols: List[str]
+    player_colors: List[str]
+    winning_length: int
+    empty_cell: str
+    title: str
+
+
 # ── Utility endpoints ──────────────────────────────────────────────
 
 @router.get("/health")
@@ -209,6 +218,19 @@ def get_gradient_border_config():
         "border_width_px": 2,
         "border_radius": "0.5rem",
         "target": "suggest-input",
+    }
+
+
+@router.get("/tictactoe-config", response_model=TicTacToeConfigResponse)
+def get_tictactoe_config():
+    """Return configuration for the tic-tac-toe game."""
+    return {
+        "board_size": 3,
+        "player_symbols": ["X", "O"],
+        "player_colors": ["#6366f1", "#ec4899"],
+        "winning_length": 3,
+        "empty_cell": "",
+        "title": "Tic-Tac-Toe",
     }
 
 

@@ -1,9 +1,9 @@
-"""Acceptance tests for the typewriter-config 'enabled' field.
+"""Acceptance tests for the tic-tac-toe config endpoint.
 
-Tests that GET /api/typewriter-config returns an 'enabled' boolean,
-matching the pattern used by every other UI config endpoint
-(back-to-top, parallax, sparkle, gradient-border).
-The field does not exist yet, so these tests are expected to FAIL.
+Tests that GET /api/tictactoe-config returns valid game configuration
+with board_size, player_symbols, player_colors, winning_length,
+empty_cell, and title fields.
+The endpoint does not exist yet, so the new test is expected to FAIL.
 """
 
 import sys
@@ -13,25 +13,8 @@ from server.app import app
 client = TestClient(app)
 
 
-def test_typewriter_config_has_enabled_field():
-    """GET /api/typewriter-config must include 'enabled: true' plus all existing fields."""
-    response = client.get("/api/typewriter-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    # Core assertion: 'enabled' field must exist and be a boolean
-    assert "enabled" in data, f"'enabled' field missing from response: {data}"
-    assert isinstance(data["enabled"], bool), f"'enabled' should be bool, got {type(data['enabled'])}"
-    assert data["enabled"] is True, f"'enabled' should default to True, got {data['enabled']}"
-    # Verify existing fields are still present and unchanged
-    assert "lines" in data, "'lines' field missing"
-    assert len(data["lines"]) == 2, f"Expected 2 lines, got {len(data['lines'])}"
-    assert data["speed_ms"] == 80, f"Expected speed_ms=80, got {data['speed_ms']}"
-    assert data["start_delay_ms"] == 300, f"Expected start_delay_ms=300, got {data['start_delay_ms']}"
-    print("PASS: typewriter-config returns enabled field with all existing fields intact")
-
-
 def test_existing_endpoints_not_broken():
-    """Adding the enabled field must not break health or other config endpoints."""
+    """Adding the new endpoint must not break health or other config endpoints."""
     # Health endpoint
     r = client.get("/api/health")
     assert r.status_code == 200, f"Health returned {r.status_code}"
@@ -52,10 +35,24 @@ def test_existing_endpoints_not_broken():
     print("PASS: existing endpoints still work correctly")
 
 
+def test_tictactoe_config_endpoint():
+    """GET /api/tictactoe-config must return valid game configuration."""
+    response = client.get("/api/tictactoe-config")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+    assert data["board_size"] == 3, f"Expected board_size=3, got {data['board_size']}"
+    assert data["winning_length"] == 3, f"Expected winning_length=3, got {data['winning_length']}"
+    assert data["player_symbols"] == ["X", "O"], f"Unexpected player_symbols: {data['player_symbols']}"
+    assert len(data["player_colors"]) == 2, f"Expected 2 player_colors, got {len(data['player_colors'])}"
+    assert data["empty_cell"] == "", f"Expected empty_cell='', got {data['empty_cell']}"
+    assert data["title"] == "Tic-Tac-Toe", f"Expected title='Tic-Tac-Toe', got {data['title']}"
+    print("PASS: tictactoe-config endpoint returns valid configuration")
+
+
 if __name__ == "__main__":
     try:
-        test_typewriter_config_has_enabled_field()
         test_existing_endpoints_not_broken()
+        test_tictactoe_config_endpoint()
         print("ALL TESTS PASSED")
     except Exception as e:
         print(f"FAIL: {e}")
