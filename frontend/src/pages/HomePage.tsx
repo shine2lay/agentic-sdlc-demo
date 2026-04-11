@@ -727,6 +727,11 @@ export function HomePage() {
               Some make it all the way to production. That's the experiment.
             </p>
 
+            <p>
+              We periodically reset the run history and roll back the codebase to a clean state.
+              If the runs list looks empty, that's why — submit a suggestion and watch the pipeline work in real time.
+            </p>
+
             <p className="text-[var(--temper-text-dim)]">
               Built with <a href="https://github.com/shine2lay/temper-ai" target="_blank" rel="noopener noreferrer" className="text-[var(--temper-accent)] hover:underline">Temper AI</a> —
               an open-source multi-agent workflow orchestration engine.
