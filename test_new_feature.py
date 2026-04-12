@@ -1,211 +1,111 @@
 """
-Acceptance tests for: add smooth scroll animation params to back-to-top config endpoint.
+Acceptance tests for: GET /api/pipeline-glow-config endpoint.
 
 Tests verify:
-  - back-to-top config includes new smooth scroll fields (scroll_duration_ms, scroll_easing, respect_reduced_motion)
-  - existing back-to-top config fields remain unchanged (regression)
-  - other endpoints unaffected (health, parallax-config, typewriter-config)
-
-Also includes prior regression tests for homepage section ordering.
+  - New endpoint returns 200 with all 12 fields, correct types and values
+  - glow_color_rgb is green (102, 187, 106) matching emerald-500, not blue
+  - total_stages is 7 matching STAGES array length
+  - min/max interpolation ranges are valid (min < max)
+  - Existing endpoints unaffected (health, confetti-config, ascii-art-config, sparkle-config)
 """
 import sys
-import re
-from pathlib import Path
 from fastapi.testclient import TestClient
 from server.app import app
 
 client = TestClient(app)
 
-HOMEPAGE_PATH = Path(__file__).parent / "frontend" / "src" / "pages" / "HomePage.tsx"
+EXPECTED_FIELDS = {
+    "enabled": bool,
+    "glow_color_rgb": str,
+    "min_blur_px": int,
+    "max_blur_px": int,
+    "min_spread_px": int,
+    "max_spread_px": int,
+    "min_opacity": float,
+    "max_opacity": float,
+    "animation_duration_ms": int,
+    "total_stages": int,
+    "respect_reduced_motion": bool,
+    "target": str,
+}
 
 
-# ── Backend regression tests (ensure APIs powering both sections still work) ──
-
-def test_community_creations_endpoint_still_works():
-    """Regression: community-creations-config endpoint returns expected shape."""
-    response = client.get("/api/community-creations-config")
+def test_pipeline_glow_config_happy_path():
+    """GET /api/pipeline-glow-config returns 200 with all 12 fields and correct values."""
+    response = client.get("/api/pipeline-glow-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
-    assert "title" in data, "Missing 'title' in response"
-    assert "creations" in data, "Missing 'creations' in response"
-    assert len(data["creations"]) > 0, "Expected at least one community creation"
-    for creation in data["creations"]:
-        assert "name" in creation, "Creation missing 'name'"
-        assert "path" in creation, "Creation missing 'path'"
-        assert creation["path"].startswith("/"), f"Path should start with /: {creation['path']}"
-    print("PASS: community creations endpoint still works")
 
+    # All 12 fields present with correct types
+    for field, expected_type in EXPECTED_FIELDS.items():
+        assert field in data, f"Missing field: {field}"
+        assert isinstance(data[field], expected_type), (
+            f"Field '{field}' expected {expected_type.__name__}, got {type(data[field]).__name__}"
+        )
 
-def test_runs_endpoint_still_works():
-    """Regression: runs endpoint returns expected shape."""
-    response = client.get("/api/runs")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert "runs" in data, "Missing 'runs' in response"
-    assert isinstance(data["runs"], list), "'runs' should be a list"
-    print("PASS: runs endpoint still works")
-
-
-def test_back_to_top_smooth_scroll_fields():
-    """Verify back-to-top config includes smooth scroll animation parameters."""
-    response = client.get("/api/back-to-top-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["scroll_behavior"] == "smooth", f"Expected scroll_behavior 'smooth', got {data['scroll_behavior']}"
-    assert data["scroll_duration_ms"] == 600, f"Expected scroll_duration_ms 600, got {data.get('scroll_duration_ms')}"
-    assert data["scroll_easing"] == "cubic-bezier(0.25, 0.1, 0.25, 1)", f"Expected cubic-bezier easing, got {data.get('scroll_easing')}"
-    assert data["respect_reduced_motion"] is True, f"Expected respect_reduced_motion True, got {data.get('respect_reduced_motion')}"
-    print("PASS: back-to-top config includes smooth scroll animation fields")
-
-
-def test_back_to_top_existing_fields_unchanged():
-    """Regression: existing back-to-top config fields are still present and unchanged."""
-    response = client.get("/api/back-to-top-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["enabled"] is True, f"Expected enabled True, got {data.get('enabled')}"
-    assert data["scroll_threshold_px"] == 400, f"Expected scroll_threshold_px 400, got {data.get('scroll_threshold_px')}"
-    assert data["position_right_px"] == 32, f"Expected position_right_px 32, got {data.get('position_right_px')}"
-    assert data["position_bottom_px"] == 32, f"Expected position_bottom_px 32, got {data.get('position_bottom_px')}"
-    assert data["size_px"] == 44, f"Expected size_px 44, got {data.get('size_px')}"
-    assert data["bg_color"] == "#6366f1", f"Expected bg_color '#6366f1', got {data.get('bg_color')}"
-    assert data["hover_bg_color"] == "#4f46e5", f"Expected hover_bg_color '#4f46e5', got {data.get('hover_bg_color')}"
-    assert data["icon_color"] == "#ffffff", f"Expected icon_color '#ffffff', got {data.get('icon_color')}"
-    assert data["border_radius"] == "50%", f"Expected border_radius '50%', got {data.get('border_radius')}"
-    assert data["transition_ms"] == 200, f"Expected transition_ms 200, got {data.get('transition_ms')}"
-    print("PASS: existing back-to-top config fields unchanged")
-
-
-def test_health_endpoint():
-    """Regression: health endpoint still returns ok."""
-    response = client.get("/api/health")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert data["status"] == "ok", f"Expected status 'ok', got {data.get('status')}"
-    print("PASS: health endpoint still works")
-
-
-def test_parallax_config_unaffected():
-    """Regression: parallax-config endpoint returns unchanged shape."""
-    response = client.get("/api/parallax-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert "enabled" in data, "Missing 'enabled' in parallax config"
-    assert "speed_factor" in data, "Missing 'speed_factor' in parallax config"
-    assert "max_offset_px" in data, "Missing 'max_offset_px' in parallax config"
-    print("PASS: parallax config unaffected")
-
-
-def test_typewriter_config_unaffected():
-    """Regression: typewriter-config endpoint returns unchanged shape."""
-    response = client.get("/api/typewriter-config")
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    data = response.json()
-    assert "enabled" in data, "Missing 'enabled' in typewriter config"
-    assert "lines" in data, "Missing 'lines' in typewriter config"
-    assert "speed_ms" in data, "Missing 'speed_ms' in typewriter config"
-    print("PASS: typewriter config unaffected")
-
-
-# ── Frontend source-level tests (verify the HomePage.tsx changes) ──
-
-def test_community_creations_appears_before_recent_changes():
-    """Community Creations section must render ABOVE Recent Changes in the JSX."""
-    source = HOMEPAGE_PATH.read_text()
-
-    cc_match = re.search(r'/\*\s*──\s*Community Creations', source)
-    rc_match = re.search(r'/\*\s*──\s*Recent changes', source)
-
-    assert cc_match is not None, "Could not find Community Creations section comment"
-    assert rc_match is not None, "Could not find Recent Changes section comment"
-
-    cc_pos = cc_match.start()
-    rc_pos = rc_match.start()
-
-    assert cc_pos < rc_pos, (
-        f"Community Creations (pos {cc_pos}) must appear BEFORE "
-        f"Recent Changes (pos {rc_pos}) in the source. "
-        f"Currently Community Creations comes after Recent Changes."
+    # Exact value checks
+    assert data["glow_color_rgb"] == "102, 187, 106", (
+        f"glow_color_rgb should be green '102, 187, 106' (emerald-500 #66bb6a), got '{data['glow_color_rgb']}'"
     )
-    print("PASS: community creations appears before recent changes")
-
-
-def test_empty_state_copy_updated():
-    """Empty state message should say 'to get started!' not 'above!'."""
-    source = HOMEPAGE_PATH.read_text()
-
-    assert "Submit a suggestion to get started!" in source, (
-        "Expected empty state text 'Submit a suggestion to get started!' not found. "
-        "The old text 'Submit a suggestion above!' should be replaced."
+    assert data["total_stages"] == 7, (
+        f"total_stages should be 7 (matching STAGES array length), got {data['total_stages']}"
     )
-    assert "Submit a suggestion above!" not in source, (
-        "Stale empty state text 'Submit a suggestion above!' still present in source."
-    )
-    print("PASS: empty state copy updated")
+    assert data["enabled"] is True
+    assert data["respect_reduced_motion"] is True
+    assert data["target"] == "pipeline-stage"
+    assert data["animation_duration_ms"] == 2000
+
+    # Interpolation range sanity: min < max for blur, spread, opacity
+    assert data["min_blur_px"] < data["max_blur_px"], "min_blur_px must be < max_blur_px"
+    assert data["min_spread_px"] < data["max_spread_px"], "min_spread_px must be < max_spread_px"
+    assert data["min_opacity"] < data["max_opacity"], "min_opacity must be < max_opacity"
+
+    # Exact min/max values
+    assert data["min_blur_px"] == 4
+    assert data["max_blur_px"] == 18
+    assert data["min_spread_px"] == 1
+    assert data["max_spread_px"] == 6
+    assert data["min_opacity"] == 0.25
+    assert data["max_opacity"] == 0.7
+
+    print("PASS: pipeline-glow-config happy path - all 12 fields correct")
 
 
-def test_community_creations_border_removed():
-    """Community Creations inner div should NOT have border-t after the move."""
-    source = HOMEPAGE_PATH.read_text()
+def test_regression_existing_endpoints():
+    """Existing nearby endpoints still work after adding the new one."""
+    # /api/health
+    r = client.get("/api/health")
+    assert r.status_code == 200, f"/api/health returned {r.status_code}"
+    assert r.json().get("status") == "ok", f"/api/health body: {r.json()}"
 
-    # Find the Community Creations section
-    cc_match = re.search(r'/\*\s*──\s*Community Creations', source)
-    assert cc_match is not None, "Could not find Community Creations section comment"
+    # /api/confetti-config (nearest neighbor)
+    r = client.get("/api/confetti-config")
+    assert r.status_code == 200, f"/api/confetti-config returned {r.status_code}"
+    confetti = r.json()
+    assert "enabled" in confetti, "confetti-config missing 'enabled'"
 
-    # Look at the next ~400 chars after the comment for the inner div
-    snippet = source[cc_match.start():cc_match.start() + 400]
+    # /api/ascii-art-config (other nearest neighbor)
+    r = client.get("/api/ascii-art-config")
+    assert r.status_code == 200, f"/api/ascii-art-config returned {r.status_code}"
+    ascii_art = r.json()
+    assert "enabled" in ascii_art, "ascii-art-config missing 'enabled'"
 
-    # The inner div should NOT have border-t styling anymore
-    assert 'border-t border-[var(--temper-border)] pt-10' not in snippet, (
-        "Community Creations inner div still has 'border-t border-[var(--temper-border)] pt-10'. "
-        "After moving above Recent Changes, this border should be removed."
-    )
-    print("PASS: community creations border-t removed")
+    # /api/sparkle-config
+    r = client.get("/api/sparkle-config")
+    assert r.status_code == 200, f"/api/sparkle-config returned {r.status_code}"
 
+    # Verify no import errors
+    from server.routes import router as _r
+    assert _r is not None, "router import failed"
 
-def test_recent_changes_has_border_separator():
-    """Recent Changes section should have a border-t separator after Community Creations moves above it."""
-    source = HOMEPAGE_PATH.read_text()
-
-    # Find the Recent Changes section
-    rc_match = re.search(r'/\*\s*──\s*Recent changes', source)
-    assert rc_match is not None, "Could not find Recent Changes section comment"
-
-    # Look at the next ~300 chars for a border-t class
-    snippet = source[rc_match.start():rc_match.start() + 300]
-
-    assert 'border-t' in snippet, (
-        "Recent Changes section should have a 'border-t' class for visual separation "
-        "from Community Creations above it."
-    )
-    print("PASS: recent changes has border separator")
+    print("PASS: regression - existing endpoints unchanged")
 
 
 if __name__ == "__main__":
-    tests = [
-        test_community_creations_endpoint_still_works,
-        test_runs_endpoint_still_works,
-        test_back_to_top_smooth_scroll_fields,
-        test_back_to_top_existing_fields_unchanged,
-        test_health_endpoint,
-        test_parallax_config_unaffected,
-        test_typewriter_config_unaffected,
-        test_community_creations_appears_before_recent_changes,
-        test_empty_state_copy_updated,
-        test_community_creations_border_removed,
-        test_recent_changes_has_border_separator,
-    ]
-    passed = 0
-    failed = 0
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            print(f"FAIL: {test.__name__}: {e}")
-            failed += 1
-    print(f"\nResults: {passed} passed, {failed} failed out of {len(tests)} tests")
-    if failed > 0:
-        sys.exit(1)
-    else:
+    try:
+        test_pipeline_glow_config_happy_path()
+        test_regression_existing_endpoints()
         print("ALL TESTS PASSED")
+    except Exception as e:
+        print(f"FAIL: {e}")
+        sys.exit(1)

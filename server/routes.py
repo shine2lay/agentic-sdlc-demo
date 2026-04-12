@@ -192,7 +192,23 @@ class ConfettiConfigResponse(BaseModel):
     max_concurrent: int
 
 
+class PipelineGlowConfigResponse(BaseModel):
+    enabled: bool
+    glow_color_rgb: str
+    min_blur_px: int
+    max_blur_px: int
+    min_spread_px: int
+    max_spread_px: int
+    min_opacity: float
+    max_opacity: float
+    animation_duration_ms: int
+    total_stages: int
+    respect_reduced_motion: bool
+    target: str
+
+
 class AsciiArtConfigResponse(BaseModel):
+    enabled: bool
     title: str
     default_text: str
     max_length: int
@@ -493,10 +509,30 @@ def get_confetti_config():
     }
 
 
+@router.get("/pipeline-glow-config", response_model=PipelineGlowConfigResponse)
+def get_pipeline_glow_config():
+    """Return configuration for the progressive glow effect on completed pipeline stage circles."""
+    return {
+        "enabled": True,
+        "glow_color_rgb": "102, 187, 106",
+        "min_blur_px": 4,
+        "max_blur_px": 18,
+        "min_spread_px": 1,
+        "max_spread_px": 6,
+        "min_opacity": 0.25,
+        "max_opacity": 0.7,
+        "animation_duration_ms": 2000,
+        "total_stages": 7,
+        "respect_reduced_motion": True,
+        "target": "pipeline-stage",
+    }
+
+
 @router.get("/ascii-art-config", response_model=AsciiArtConfigResponse)
 def get_ascii_art_config():
     """Return configuration for the ASCII art generator tool."""
     return {
+        "enabled": True,
         "title": "ASCII Art Generator",
         "default_text": "HELLO",
         "max_length": 20,
