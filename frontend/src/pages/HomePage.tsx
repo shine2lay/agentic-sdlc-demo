@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
+import { formatCost } from '../lib/utils';
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -758,7 +759,7 @@ export function HomePage() {
                           <p className="text-xs text-[var(--temper-text-dim)] mt-2">
                             {outcome === 'pending' ? `Queue position #${queuePos}` :
                              outcome === 'running' ? 'Processing...' :
-                             `${formatDuration(run.duration_seconds)}${run.duration_seconds ? ' · ' : ''}`}
+                             [formatDuration(run.duration_seconds), run.cost_dollars != null ? formatCost(run.cost_dollars) : null].filter(Boolean).join(' · ') + ((run.duration_seconds || run.cost_dollars != null) ? ' · ' : '')}
                             {outcome !== 'pending' && formatTimeAgo(run.created_at)}
                           </p>
                         </div>

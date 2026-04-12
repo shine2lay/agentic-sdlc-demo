@@ -27,6 +27,9 @@ def calculate_duration(started_at: datetime | None, completed_at: datetime | Non
     return None
 
 
+COST_PER_TOKEN = 0.000015  # $15 per million tokens (blended Claude rate)
+
+
 def extract_total_tokens(result: dict | None) -> int | None:
     """Extract total_tokens from execution result if available."""
     if not result:
@@ -35,6 +38,13 @@ def extract_total_tokens(result: dict | None) -> int | None:
     if execution and isinstance(execution, dict):
         return execution.get("total_tokens")
     return None
+
+
+def calculate_cost_dollars(total_tokens: int | None) -> float | None:
+    """Calculate approximate cost in USD from token count."""
+    if total_tokens is None:
+        return None
+    return round(total_tokens * COST_PER_TOKEN, 4)
 
 
 def extract_workflow_output(result: dict | None) -> dict | None:
@@ -681,26 +691,26 @@ def list_runs(
     if status:
         query = query.where(Run.status == status)
     runs = session.exec(query).all()
-    return {
-        "runs": [
-            {
-                "id": r.id,
-                "workflow": r.workflow,
-                "status": r.status,
-                "inputs": r.get_inputs(),
-                "created_at": r.created_at.isoformat(),
-                "started_at": r.started_at.isoformat() if r.started_at else None,
-                "completed_at": r.completed_at.isoformat() if r.completed_at else None,
-                "error": r.error,
-                "has_result": r.result is not None,
-                "duration_seconds": calculate_duration(r.started_at, r.completed_at),
-                "total_tokens": extract_total_tokens(r.get_result()),
-                "workflow_output": extract_workflow_output(r.get_result()),
-            }
-            for r in runs
-        ],
-        "total": len(runs),
-    }
+    run_list = []
+    for r in runs:
+        result = r.get_result()
+        total_tokens = extract_total_tokens(result)
+        run_list.append({
+            "id": r.id,
+            "workflow": r.workflow,
+            "status": r.status,
+            "inputs": r.get_inputs(),
+            "created_at": r.created_at.isoformat(),
+            "started_at": r.started_at.isoformat() if r.started_at else None,
+            "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+            "error": r.error,
+            "has_result": r.result is not None,
+            "duration_seconds": calculate_duration(r.started_at, r.completed_at),
+            "total_tokens": total_tokens,
+            "workflow_output": extract_workflow_output(result),
+            "cost_dollars": calculate_cost_dollars(total_tokens),
+        })
+    return {"runs": run_list, "total": len(runs)}
 
 
 @router.get("/runs/{run_id}")
@@ -708,17 +718,19 @@ def get_run(run_id: str, session: Session = Depends(get_session)):
     run = session.get(Run, run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
+    result = run.get_result()
     return {
         "id": run.id,
         "workflow": run.workflow,
         "status": run.status,
         "inputs": run.get_inputs(),
-        "result": run.get_result(),
+        "result": result,
         "error": run.error,
         "worker_id": run.worker_id,
         "created_at": run.created_at.isoformat(),
         "started_at": run.started_at.isoformat() if run.started_at else None,
         "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+        "cost_dollars": calculate_cost_dollars(extract_total_tokens(result)),
     }
 
 
