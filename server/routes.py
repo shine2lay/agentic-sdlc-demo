@@ -258,6 +258,22 @@ class CountdownTimerConfigResponse(BaseModel):
     max_seconds: int
 
 
+class EmojiRainConfigResponse(BaseModel):
+    enabled: bool
+    emojis: List[str]
+    drop_count: int
+    min_duration_ms: int
+    max_duration_ms: int
+    min_delay_ms: int
+    max_delay_ms: int
+    min_size_px: int
+    max_size_px: int
+    opacity: float
+    z_index: int
+    respect_reduced_motion: bool
+    target: str
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -570,6 +586,26 @@ def get_countdown_timer_config():
         "default_seconds": 0,
         "min_seconds": 1,
         "max_seconds": 5999,
+    }
+
+
+@router.get("/emoji-rain-config", response_model=EmojiRainConfigResponse)
+def get_emoji_rain_config():
+    """Return configuration for the emoji rain animation behind the hero section."""
+    return {
+        "enabled": True,
+        "emojis": ["🚀", "✨", "💻", "🎉", "⚡", "🔥", "🌈", "💡", "🎯", "🛠️"],
+        "drop_count": 25,
+        "min_duration_ms": 3000,
+        "max_duration_ms": 7000,
+        "min_delay_ms": 0,
+        "max_delay_ms": 5000,
+        "min_size_px": 16,
+        "max_size_px": 32,
+        "opacity": 0.3,
+        "z_index": -1,
+        "respect_reduced_motion": True,
+        "target": "hero-section",
     }
 
 
