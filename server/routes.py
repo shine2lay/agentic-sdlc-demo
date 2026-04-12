@@ -267,6 +267,19 @@ class CommunityCreationsConfigResponse(BaseModel):
     creations: List[CommunityCreationItem]
 
 
+class NoiseTextureConfigResponse(BaseModel):
+    enabled: bool
+    noise_opacity: float
+    base_background_color: str
+    noise_grain_size_px: int
+    animation_speed_ms: int
+    noise_intensity: float
+    blend_mode: str
+    z_index: int
+    respect_reduced_motion: bool
+    target: str
+
+
 class CountdownTimerConfigResponse(BaseModel):
     title: str
     default_minutes: int
@@ -952,6 +965,23 @@ def get_community_creations_config():
             {"name": "Palette Generator", "description": "Generate harmonious color palettes with one click", "path": "/tools/palette"},
             {"name": "Pixel Art Canvas", "description": "Draw pixel art on an interactive 16x16 grid", "path": "/games/pixel-art"},
         ],
+    }
+
+
+@router.get("/noise-texture-config", response_model=NoiseTextureConfigResponse)
+def get_noise_texture_config():
+    """Return configuration for the subtle animated noise texture on the page background."""
+    return {
+        "enabled": True,
+        "noise_opacity": 0.04,
+        "base_background_color": "#0f172a",
+        "noise_grain_size_px": 2,
+        "animation_speed_ms": 8000,
+        "noise_intensity": 0.15,
+        "blend_mode": "overlay",
+        "z_index": -1,
+        "respect_reduced_motion": True,
+        "target": "page-background",
     }
 
 
