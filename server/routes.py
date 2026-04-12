@@ -363,6 +363,18 @@ class PaletteConfigResponse(BaseModel):
     colors_per_palette: int
 
 
+class PixelArtConfigResponse(BaseModel):
+    title: str
+    grid_size: int
+    default_color: str
+    pixel_size_px: int
+    grid_line_color: str
+    grid_line_width_px: int
+    palette_colors: List[str]
+    show_gridlines: bool
+    background_color: str
+
+
 PROGRAMMING_JOKES = [
     {"joke": "Why do programmers prefer dark mode? Because light attracts bugs.", "category": "general"},
     {"joke": "There are only 10 types of people in the world: those who understand binary and those who don't.", "category": "general"},
@@ -664,6 +676,22 @@ def generate_palette():
     return generate_harmonious_palette()
 
 
+@router.get("/pixel-art-config", response_model=PixelArtConfigResponse)
+def get_pixel_art_config():
+    """Return configuration for the pixel art canvas."""
+    return {
+        "title": "Pixel Art Canvas",
+        "grid_size": 16,
+        "default_color": "#ffffff",
+        "pixel_size_px": 24,
+        "grid_line_color": "#e5e7eb",
+        "grid_line_width_px": 1,
+        "palette_colors": ["#000000", "#ffffff", "#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280", "#92400e", "#065f46", "#1e3a5f", "#fbbf24", "#7c3aed", "#db2777"],
+        "show_gridlines": True,
+        "background_color": "#ffffff",
+    }
+
+
 @router.get("/programming-joke", response_model=ProgrammingJokeResponse)
 def get_programming_joke():
     """Return a random programming joke."""
@@ -897,6 +925,7 @@ def get_community_creations_config():
             {"name": "Countdown Timer", "description": "A simple countdown timer with start, stop, and reset controls", "path": "/tools/timer"},
             {"name": "Typing Speed Test", "description": "Test your typing speed and accuracy", "path": "/games/typing-test"},
             {"name": "Palette Generator", "description": "Generate harmonious color palettes with one click", "path": "/tools/palette"},
+            {"name": "Pixel Art Canvas", "description": "Draw pixel art on an interactive 16x16 grid", "path": "/games/pixel-art"},
         ],
     }
 

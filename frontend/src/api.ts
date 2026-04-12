@@ -161,6 +161,24 @@ export async function fetchPaletteGenerate(): Promise<PaletteGenerateResult> {
   return res.json();
 }
 
+export interface PixelArtConfig {
+  title: string;
+  grid_size: number;
+  default_color: string;
+  pixel_size_px: number;
+  grid_line_color: string;
+  grid_line_width_px: number;
+  palette_colors: string[];
+  show_gridlines: boolean;
+  background_color: string;
+}
+
+export async function fetchPixelArtConfig(): Promise<PixelArtConfig> {
+  const res = await fetch(`${API_URL}/api/pixel-art-config`);
+  if (!res.ok) throw new Error(`Fetch pixel art config failed: ${res.status}`);
+  return res.json();
+}
+
 export interface SuggestionsCountData {
   total_suggestions: number;
   poll_interval_ms: number;

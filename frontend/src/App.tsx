@@ -9,6 +9,7 @@ import { AsciiArtPage } from './pages/AsciiArtPage';
 import { TimerPage } from './pages/TimerPage';
 import { TypingTestPage } from './pages/TypingTestPage';
 import { PalettePage } from './pages/PalettePage';
+import { PixelArtPage } from './pages/PixelArtPage';
 import { fetchVersion } from './api';
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/tools/timer" element={<TimerPage />} />
           <Route path="/games/typing-test" element={<TypingTestPage />} />
           <Route path="/tools/palette" element={<PalettePage />} />
+          <Route path="/games/pixel-art" element={<PixelArtPage />} />
         </Routes>
       </main>
       <footer className="bg-[var(--temper-panel)] border-t border-[var(--temper-border)] text-[var(--temper-text-muted)] text-sm py-2 text-center">
@@ -50,6 +52,7 @@ export default function App() {
           {' · '}<a href="/tools/timer" className="text-[var(--temper-accent)] hover:underline">Timer</a>
           {' · '}<a href="/games/typing-test" className="text-[var(--temper-accent)] hover:underline">Typing Test</a>
           {' · '}<a href="/tools/palette" className="text-[var(--temper-accent)] hover:underline">Palette</a>
+          {' · '}<a href="/games/pixel-art" className="text-[var(--temper-accent)] hover:underline">Pixel Art</a>
         </p>
         {versionInfo?.version && (
           <p className="text-xs mt-1 text-[var(--temper-text-muted)]">
