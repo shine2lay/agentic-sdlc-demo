@@ -291,6 +291,23 @@ export async function calculateTypingSpeed(original: string, typed: string, elap
   return res.json();
 }
 
+export interface ActiveTabShimmerConfig {
+  enabled: boolean;
+  gradient_colors: string[];
+  animation_duration_ms: number;
+  angle_deg: number;
+  shimmer_width_percent: number;
+  opacity: number;
+  respect_reduced_motion: boolean;
+  target: string;
+}
+
+export async function fetchActiveTabShimmerConfig(): Promise<ActiveTabShimmerConfig> {
+  const res = await fetch(`${API_URL}/api/active-tab-shimmer-config`);
+  if (!res.ok) throw new Error(`Fetch active tab shimmer config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

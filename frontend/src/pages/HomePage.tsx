@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 import { formatCost } from '../lib/utils';
 
@@ -56,8 +56,8 @@ function useAnimatedNumber(target: number, duration = 300): number {
   return display;
 }
 
-function AnimatedTab({ tab, count, isActive, onClick }: {
-  tab: string; count: number; isActive: boolean; onClick: () => void;
+function AnimatedTab({ tab, count, isActive, onClick, shimmerEnabled }: {
+  tab: string; count: number; isActive: boolean; onClick: () => void; shimmerEnabled?: boolean;
 }) {
   const animatedCount = useAnimatedNumber(count);
   const prefixes: Record<string, string> = {
@@ -71,7 +71,7 @@ function AnimatedTab({ tab, count, isActive, onClick }: {
       onClick={onClick}
       className={`text-xs font-medium transition-colors pb-1 ${
         isActive
-          ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]'
+          ? 'text-[var(--temper-text)] border-b-2 border-[var(--temper-accent)]' + (shimmerEnabled ? ' animate-tab-shimmer' : '')
           : 'text-[var(--temper-text-dim)] hover:text-[var(--temper-text-muted)] border-b-2 border-transparent'
       }`}
     >
@@ -276,6 +276,7 @@ export function HomePage() {
   const [programmingJoke, setProgrammingJoke] = useState<ProgrammingJoke | null>(null);
   const [confettiConfig, setConfettiConfig] = useState<ConfettiConfig | null>(null);
   const [communityCreations, setCommunityCreations] = useState<CommunityCreationsConfig | null>(null);
+  const [shimmerConfig, setShimmerConfig] = useState<ActiveTabShimmerConfig | null>(null);
   const [confettiRunIds, setConfettiRunIds] = useState<Set<string>>(new Set());
   const prevOutcomesRef = useRef<Map<string, RunOutcome>>(new Map());
   const isFirstFetchRef = useRef(true);
@@ -298,6 +299,7 @@ export function HomePage() {
     fetchProgrammingJoke().then(setProgrammingJoke).catch(() => {});
     fetchConfettiConfig().then(setConfettiConfig).catch(() => {});
     fetchCommunityCreationsConfig().then(setCommunityCreations).catch(() => {});
+    fetchActiveTabShimmerConfig().then(setShimmerConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -640,6 +642,7 @@ export function HomePage() {
                   count={count}
                   isActive={filter === tab}
                   onClick={() => { setFilter(tab); setShowCount(8); }}
+                  shimmerEnabled={shimmerConfig?.enabled ?? false}
                 />
               );
             })}

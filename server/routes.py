@@ -274,6 +274,17 @@ class EmojiRainConfigResponse(BaseModel):
     target: str
 
 
+class ActiveTabShimmerConfigResponse(BaseModel):
+    enabled: bool
+    gradient_colors: List[str]
+    animation_duration_ms: int
+    angle_deg: int
+    shimmer_width_percent: int
+    opacity: float
+    respect_reduced_motion: bool
+    target: str
+
+
 class TypingTestConfigResponse(BaseModel):
     title: str
     sentences: List[str]
@@ -627,6 +638,21 @@ def get_emoji_rain_config():
         "z_index": -1,
         "respect_reduced_motion": True,
         "target": "hero-section",
+    }
+
+
+@router.get("/active-tab-shimmer-config", response_model=ActiveTabShimmerConfigResponse)
+def get_active_tab_shimmer_config():
+    """Return configuration for the gradient shimmer effect on the active filter tab."""
+    return {
+        "enabled": True,
+        "gradient_colors": ["rgba(99,102,241,0)", "rgba(99,102,241,0.4)", "rgba(139,92,246,0.5)", "rgba(99,102,241,0.4)", "rgba(99,102,241,0)"],
+        "animation_duration_ms": 2000,
+        "angle_deg": 120,
+        "shimmer_width_percent": 30,
+        "opacity": 0.6,
+        "respect_reduced_motion": True,
+        "target": "active-filter-tab",
     }
 
 
