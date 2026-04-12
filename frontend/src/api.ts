@@ -229,6 +229,23 @@ export async function generateAsciiArt(text: string): Promise<AsciiArtResponse> 
   return res.json();
 }
 
+export interface CommunityCreationItem {
+  name: string;
+  description: string;
+  path: string;
+}
+
+export interface CommunityCreationsConfig {
+  title: string;
+  creations: CommunityCreationItem[];
+}
+
+export async function fetchCommunityCreationsConfig(): Promise<CommunityCreationsConfig> {
+  const res = await fetch(`${API_URL}/api/community-creations-config`);
+  if (!res.ok) throw new Error(`Fetch community creations config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

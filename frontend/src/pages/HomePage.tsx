@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 
 // ── Helpers ────────────────────────────────────────────────
@@ -274,6 +274,7 @@ export function HomePage() {
   const [suggestionsCount, setSuggestionsCount] = useState<number>(0);
   const [programmingJoke, setProgrammingJoke] = useState<ProgrammingJoke | null>(null);
   const [confettiConfig, setConfettiConfig] = useState<ConfettiConfig | null>(null);
+  const [communityCreations, setCommunityCreations] = useState<CommunityCreationsConfig | null>(null);
   const [confettiRunIds, setConfettiRunIds] = useState<Set<string>>(new Set());
   const prevOutcomesRef = useRef<Map<string, RunOutcome>>(new Map());
   const isFirstFetchRef = useRef(true);
@@ -295,6 +296,7 @@ export function HomePage() {
     fetchSuggestionsCount().then((d) => setSuggestionsCount(d.total_suggestions)).catch(() => {});
     fetchProgrammingJoke().then(setProgrammingJoke).catch(() => {});
     fetchConfettiConfig().then(setConfettiConfig).catch(() => {});
+    fetchCommunityCreationsConfig().then(setCommunityCreations).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -754,6 +756,29 @@ export function HomePage() {
           </>
         )}
       </section>
+
+      {/* ── Community Creations ─────────────────────────────────────── */}
+      {communityCreations && communityCreations.creations.length > 0 && (
+        <section className="max-w-3xl mx-auto px-8 py-10">
+          <div className="border-t border-[var(--temper-border)] pt-10">
+            <h2 className="text-sm font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-6">
+              {communityCreations.title}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {communityCreations.creations.map((creation) => (
+                <a
+                  key={creation.path}
+                  href={creation.path}
+                  className="block p-4 rounded-lg border border-[var(--temper-border)] bg-[var(--temper-surface)] hover:border-[var(--temper-accent)] transition-colors"
+                >
+                  <h3 className="text-sm font-medium text-[var(--temper-text)]">{creation.name}</h3>
+                  <p className="text-xs text-[var(--temper-text-muted)] mt-1">{creation.description}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── About ─────────────────────────────────────── */}
       <section className="max-w-3xl mx-auto px-8 py-12 pb-20">

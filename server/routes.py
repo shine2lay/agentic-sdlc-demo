@@ -210,6 +210,17 @@ class AsciiArtResponse(BaseModel):
     height: int
 
 
+class CommunityCreationItem(BaseModel):
+    name: str
+    description: str
+    path: str
+
+
+class CommunityCreationsConfigResponse(BaseModel):
+    title: str
+    creations: List[CommunityCreationItem]
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -506,6 +517,20 @@ def generate_ascii_art_endpoint(body: AsciiArtRequest):
         "original_text": original,
         "width": width,
         "height": 5,
+    }
+
+
+@router.get("/community-creations-config", response_model=CommunityCreationsConfigResponse)
+def get_community_creations_config():
+    """Return configuration for the community creations section on the homepage."""
+    return {
+        "title": "These pages were built entirely by AI from user suggestions",
+        "creations": [
+            {"name": "Tic-Tac-Toe", "description": "A classic two-player game built with React", "path": "/games/tictactoe"},
+            {"name": "Color Picker", "description": "Pick colors and convert between hex, RGB, and HSL formats", "path": "/tools/colors"},
+            {"name": "ASCII Art Generator", "description": "Turn text into block-letter ASCII art", "path": "/tools/ascii"},
+            {"name": "Markdown Preview", "description": "Live preview editor for Markdown syntax", "path": "/tools/markdown"},
+        ],
     }
 
 
