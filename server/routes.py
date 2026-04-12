@@ -219,6 +219,26 @@ class ConfettiConfigResponse(BaseModel):
     max_concurrent: int
 
 
+class DeployVisitConfettiConfigResponse(BaseModel):
+    enabled: bool
+    particle_count: int
+    duration_ms: int
+    spread_deg: int
+    colors: List[str]
+    gravity: float
+    drift: float
+    size_range: List[int]
+    shapes: List[str]
+    origin_x: float
+    origin_y: float
+    trigger: str
+    trigger_status: str
+    first_visit_only: bool
+    cooldown_session_key: str
+    respect_reduced_motion: bool
+    target: str
+
+
 class PipelineGlowConfigResponse(BaseModel):
     enabled: bool
     glow_color_rgb: str
@@ -789,6 +809,30 @@ def get_confetti_config():
         "respect_reduced_motion": True,
         "target": "run-card",
         "max_concurrent": 3,
+    }
+
+
+@router.get("/deploy-visit-confetti-config", response_model=DeployVisitConfettiConfigResponse)
+def get_deploy_visit_confetti_config():
+    """Return configuration for the confetti burst animation on first visit to a successfully deployed run."""
+    return {
+        "enabled": True,
+        "particle_count": 80,
+        "duration_ms": 2500,
+        "spread_deg": 120,
+        "colors": ["#34d399", "#6366f1", "#fbbf24", "#ec4899", "#3b82f6", "#a78bfa"],
+        "gravity": 0.6,
+        "drift": 0.3,
+        "size_range": [5, 12],
+        "shapes": ["circle", "square", "star"],
+        "origin_x": 0.5,
+        "origin_y": 0.3,
+        "trigger": "first-visit",
+        "trigger_status": "deployed",
+        "first_visit_only": True,
+        "cooldown_session_key": "confetti_seen_run_{run_id}",
+        "respect_reduced_motion": True,
+        "target": "run-detail-page",
     }
 
 
