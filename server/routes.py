@@ -285,6 +285,22 @@ class ActiveTabShimmerConfigResponse(BaseModel):
     target: str
 
 
+class DeployCheckmarkConfigResponse(BaseModel):
+    enabled: bool
+    size_px: int
+    stroke_color: str
+    fill_opacity: float
+    circle_stroke_width: float
+    check_stroke_width: float
+    circle_animation_duration_ms: int
+    draw_animation_duration_ms: int
+    draw_animation_delay_ms: int
+    easing: str
+    respect_reduced_motion: bool
+    animate_only_on_transition: bool
+    target: str
+
+
 class TypingTestConfigResponse(BaseModel):
     title: str
     sentences: List[str]
@@ -653,6 +669,26 @@ def get_active_tab_shimmer_config():
         "opacity": 0.6,
         "respect_reduced_motion": True,
         "target": "active-filter-tab",
+    }
+
+
+@router.get("/deploy-checkmark-config", response_model=DeployCheckmarkConfigResponse)
+def get_deploy_checkmark_config():
+    """Return configuration for the animated checkmark icon displayed on deployed run cards."""
+    return {
+        "enabled": True,
+        "size_px": 20,
+        "stroke_color": "#34d399",
+        "fill_opacity": 0.1,
+        "circle_stroke_width": 2.0,
+        "check_stroke_width": 2.5,
+        "circle_animation_duration_ms": 400,
+        "draw_animation_duration_ms": 300,
+        "draw_animation_delay_ms": 200,
+        "easing": "ease-out",
+        "respect_reduced_motion": True,
+        "animate_only_on_transition": True,
+        "target": "deployed-run-card",
     }
 
 
