@@ -599,8 +599,32 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* ── Community Creations ─────────────────────────────────────── */}
+      {communityCreations && communityCreations.creations.length > 0 && (
+        <section className="max-w-3xl mx-auto px-8 py-10">
+          <div className="pt-2">
+            <h2 className="text-sm font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-6">
+              {communityCreations.title}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {communityCreations.creations.map((creation) => (
+                <a
+                  key={creation.path}
+                  href={creation.path}
+                  className="block p-4 rounded-lg border border-[var(--temper-border)] bg-[var(--temper-surface)] hover:border-[var(--temper-accent)] transition-colors"
+                >
+                  <h3 className="text-sm font-medium text-[var(--temper-text)]">{creation.name}</h3>
+                  <p className="text-xs text-[var(--temper-text-muted)] mt-1">{creation.description}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── Recent changes ────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-8 py-8 pb-16">
+        <div className="border-t border-[var(--temper-border)] pt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide">
             Recent Changes
@@ -639,7 +663,7 @@ export function HomePage() {
           </div>
         ) : filteredRuns.length === 0 ? (
           <div className="text-center py-16 text-[var(--temper-text-muted)]">
-            {filter === 'all' ? 'No changes yet. Submit a suggestion above!' : `No ${filter} changes.`}
+            {filter === 'all' ? 'No changes yet. Submit a suggestion to get started!' : `No ${filter} changes.`}
           </div>
         ) : (
           <>
@@ -755,30 +779,8 @@ export function HomePage() {
             )}
           </>
         )}
+        </div>
       </section>
-
-      {/* ── Community Creations ─────────────────────────────────────── */}
-      {communityCreations && communityCreations.creations.length > 0 && (
-        <section className="max-w-3xl mx-auto px-8 py-10">
-          <div className="border-t border-[var(--temper-border)] pt-10">
-            <h2 className="text-sm font-semibold text-[var(--temper-text-muted)] uppercase tracking-wide mb-6">
-              {communityCreations.title}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {communityCreations.creations.map((creation) => (
-                <a
-                  key={creation.path}
-                  href={creation.path}
-                  className="block p-4 rounded-lg border border-[var(--temper-border)] bg-[var(--temper-surface)] hover:border-[var(--temper-accent)] transition-colors"
-                >
-                  <h3 className="text-sm font-medium text-[var(--temper-text)]">{creation.name}</h3>
-                  <p className="text-xs text-[var(--temper-text-muted)] mt-1">{creation.description}</p>
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── About ─────────────────────────────────────── */}
       <section className="max-w-3xl mx-auto px-8 py-12 pb-20">
