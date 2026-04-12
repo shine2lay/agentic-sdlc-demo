@@ -1,111 +1,75 @@
-"""
-Acceptance tests for: GET /api/pipeline-glow-config endpoint.
+"""Acceptance tests for the countdown timer config endpoint and community creations update."""
 
-Tests verify:
-  - New endpoint returns 200 with all 12 fields, correct types and values
-  - glow_color_rgb is green (102, 187, 106) matching emerald-500, not blue
-  - total_stages is 7 matching STAGES array length
-  - min/max interpolation ranges are valid (min < max)
-  - Existing endpoints unaffected (health, confetti-config, ascii-art-config, sparkle-config)
-"""
 import sys
 from fastapi.testclient import TestClient
 from server.app import app
 
 client = TestClient(app)
 
-EXPECTED_FIELDS = {
-    "enabled": bool,
-    "glow_color_rgb": str,
-    "min_blur_px": int,
-    "max_blur_px": int,
-    "min_spread_px": int,
-    "max_spread_px": int,
-    "min_opacity": float,
-    "max_opacity": float,
-    "animation_duration_ms": int,
-    "total_stages": int,
-    "respect_reduced_motion": bool,
-    "target": str,
-}
 
-
-def test_pipeline_glow_config_happy_path():
-    """GET /api/pipeline-glow-config returns 200 with all 12 fields and correct values."""
-    response = client.get("/api/pipeline-glow-config")
+def test_countdown_timer_config_happy_path():
+    """GET /api/countdown-timer-config returns 200 with all expected fields and values."""
+    response = client.get("/api/countdown-timer-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
+    assert data["title"] == "Countdown Timer", f"Expected title 'Countdown Timer', got {data.get('title')}"
+    assert data["default_minutes"] == 5, f"Expected default_minutes 5, got {data.get('default_minutes')}"
+    assert data["default_seconds"] == 0, f"Expected default_seconds 0, got {data.get('default_seconds')}"
+    assert data["min_seconds"] == 1, f"Expected min_seconds 1, got {data.get('min_seconds')}"
+    assert data["max_seconds"] == 5999, f"Expected max_seconds 5999, got {data.get('max_seconds')}"
+    print("PASS: countdown timer config happy path")
 
-    # All 12 fields present with correct types
-    for field, expected_type in EXPECTED_FIELDS.items():
-        assert field in data, f"Missing field: {field}"
-        assert isinstance(data[field], expected_type), (
-            f"Field '{field}' expected {expected_type.__name__}, got {type(data[field]).__name__}"
-        )
 
-    # Exact value checks
-    assert data["glow_color_rgb"] == "102, 187, 106", (
-        f"glow_color_rgb should be green '102, 187, 106' (emerald-500 #66bb6a), got '{data['glow_color_rgb']}'"
-    )
-    assert data["total_stages"] == 7, (
-        f"total_stages should be 7 (matching STAGES array length), got {data['total_stages']}"
-    )
-    assert data["enabled"] is True
-    assert data["respect_reduced_motion"] is True
-    assert data["target"] == "pipeline-stage"
-    assert data["animation_duration_ms"] == 2000
-
-    # Interpolation range sanity: min < max for blur, spread, opacity
-    assert data["min_blur_px"] < data["max_blur_px"], "min_blur_px must be < max_blur_px"
-    assert data["min_spread_px"] < data["max_spread_px"], "min_spread_px must be < max_spread_px"
-    assert data["min_opacity"] < data["max_opacity"], "min_opacity must be < max_opacity"
-
-    # Exact min/max values
-    assert data["min_blur_px"] == 4
-    assert data["max_blur_px"] == 18
-    assert data["min_spread_px"] == 1
-    assert data["max_spread_px"] == 6
-    assert data["min_opacity"] == 0.25
-    assert data["max_opacity"] == 0.7
-
-    print("PASS: pipeline-glow-config happy path - all 12 fields correct")
+def test_community_creations_includes_timer():
+    """GET /api/community-creations-config includes a Countdown Timer entry."""
+    response = client.get("/api/community-creations-config")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+    creations = data.get("creations", [])
+    timer_entries = [c for c in creations if c.get("name") == "Countdown Timer"]
+    assert len(timer_entries) == 1, f"Expected 1 'Countdown Timer' entry in creations, found {len(timer_entries)}"
+    assert timer_entries[0]["path"] == "/tools/timer", f"Expected path '/tools/timer', got {timer_entries[0].get('path')}"
+    print("PASS: community creations includes timer")
 
 
 def test_regression_existing_endpoints():
-    """Existing nearby endpoints still work after adding the new one."""
-    # /api/health
-    r = client.get("/api/health")
-    assert r.status_code == 200, f"/api/health returned {r.status_code}"
-    assert r.json().get("status") == "ok", f"/api/health body: {r.json()}"
+    """Verify existing endpoints still work (regression check)."""
+    # Health endpoint
+    resp = client.get("/api/health")
+    assert resp.status_code == 200, f"Health check failed: {resp.status_code}"
+    assert resp.json() == {"status": "ok"}, f"Health response unexpected: {resp.json()}"
 
-    # /api/confetti-config (nearest neighbor)
-    r = client.get("/api/confetti-config")
-    assert r.status_code == 200, f"/api/confetti-config returned {r.status_code}"
-    confetti = r.json()
-    assert "enabled" in confetti, "confetti-config missing 'enabled'"
+    # ASCII art config
+    resp = client.get("/api/ascii-art-config")
+    assert resp.status_code == 200, f"ASCII art config failed: {resp.status_code}"
 
-    # /api/ascii-art-config (other nearest neighbor)
-    r = client.get("/api/ascii-art-config")
-    assert r.status_code == 200, f"/api/ascii-art-config returned {r.status_code}"
-    ascii_art = r.json()
-    assert "enabled" in ascii_art, "ascii-art-config missing 'enabled'"
+    # Community creations config
+    resp = client.get("/api/community-creations-config")
+    assert resp.status_code == 200, f"Community creations config failed: {resp.status_code}"
 
-    # /api/sparkle-config
-    r = client.get("/api/sparkle-config")
-    assert r.status_code == 200, f"/api/sparkle-config returned {r.status_code}"
-
-    # Verify no import errors
+    # Import check for syntax errors
     from server.routes import router as _r
-    assert _r is not None, "router import failed"
+    assert _r is not None
 
-    print("PASS: regression - existing endpoints unchanged")
+    print("PASS: regression existing endpoints")
 
 
 if __name__ == "__main__":
-    try:
-        test_pipeline_glow_config_happy_path()
-        test_regression_existing_endpoints()
-        print("ALL TESTS PASSED")
-    except Exception as e:
-        print(f"FAIL: {e}")
+    passed = 0
+    failed = 0
+    for test_fn in [
+        test_countdown_timer_config_happy_path,
+        test_community_creations_includes_timer,
+        test_regression_existing_endpoints,
+    ]:
+        try:
+            test_fn()
+            passed += 1
+        except Exception as e:
+            print(f"FAIL: {test_fn.__name__}: {e}")
+            failed += 1
+
+    print(f"\nResults: {passed} passed, {failed} failed out of {passed + failed}")
+    if failed > 0:
         sys.exit(1)
+    print("ALL TESTS PASSED")

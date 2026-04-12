@@ -229,6 +229,20 @@ export async function generateAsciiArt(text: string): Promise<AsciiArtResponse> 
   return res.json();
 }
 
+export interface CountdownTimerConfig {
+  title: string;
+  default_minutes: number;
+  default_seconds: number;
+  min_seconds: number;
+  max_seconds: number;
+}
+
+export async function fetchCountdownTimerConfig(): Promise<CountdownTimerConfig> {
+  const res = await fetch(`${API_URL}/api/countdown-timer-config`);
+  if (!res.ok) throw new Error(`Fetch countdown timer config failed: ${res.status}`);
+  return res.json();
+}
+
 export interface CommunityCreationItem {
   name: string;
   description: string;

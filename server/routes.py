@@ -240,6 +240,14 @@ class CommunityCreationsConfigResponse(BaseModel):
     creations: List[CommunityCreationItem]
 
 
+class CountdownTimerConfigResponse(BaseModel):
+    title: str
+    default_minutes: int
+    default_seconds: int
+    min_seconds: int
+    max_seconds: int
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -543,6 +551,18 @@ def get_ascii_art_config():
     }
 
 
+@router.get("/countdown-timer-config", response_model=CountdownTimerConfigResponse)
+def get_countdown_timer_config():
+    """Return configuration for the countdown timer widget."""
+    return {
+        "title": "Countdown Timer",
+        "default_minutes": 5,
+        "default_seconds": 0,
+        "min_seconds": 1,
+        "max_seconds": 5999,
+    }
+
+
 @router.post("/ascii-art-generate", response_model=AsciiArtResponse)
 def generate_ascii_art_endpoint(body: AsciiArtRequest):
     """Generate block-letter ASCII art from input text."""
@@ -572,6 +592,7 @@ def get_community_creations_config():
             {"name": "Color Picker", "description": "Pick colors and convert between hex, RGB, and HSL formats", "path": "/tools/colors"},
             {"name": "ASCII Art Generator", "description": "Turn text into block-letter ASCII art", "path": "/tools/ascii"},
             {"name": "Markdown Preview", "description": "Live preview editor for Markdown syntax", "path": "/tools/markdown"},
+            {"name": "Countdown Timer", "description": "A simple countdown timer with start, stop, and reset controls", "path": "/tools/timer"},
         ],
     }
 
