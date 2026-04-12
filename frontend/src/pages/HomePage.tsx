@@ -776,7 +776,7 @@ export function HomePage() {
                             {outcome === 'pending' ? `Queue position #${queuePos}` :
                              outcome === 'running' ? 'Processing...' :
                              [formatDuration(run.duration_seconds), run.cost_dollars != null ? formatCost(run.cost_dollars) : null].filter(Boolean).join(' · ') + ((run.duration_seconds || run.cost_dollars != null) ? ' · ' : '')}
-                            {outcome !== 'pending' && formatTimeAgo(run.created_at)}
+                            {outcome !== 'pending' && <span title={run.created_at ? new Date(run.created_at).toLocaleString() : ''}>{formatTimeAgo(run.created_at)}</span>}
                           </p>
                         </div>
                       </div>

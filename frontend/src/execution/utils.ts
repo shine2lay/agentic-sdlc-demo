@@ -75,7 +75,10 @@ export function formatTimeAgo(timestamp: string | null | undefined): string {
   const diffHours = Math.floor(diffSeconds / 3600);
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   const diffDays = Math.floor(diffSeconds / 86400);
-  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  if (diffDays < 30) { const weeks = Math.floor(diffDays / 7); return `${weeks} week${weeks > 1 ? 's' : ''} ago`; }
+  if (diffDays < 365) { const months = Math.floor(diffDays / 30); return `${months} month${months > 1 ? 's' : ''} ago`; }
+  return new Date(ensureUTC(timestamp)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 /** Categorize an error message into a type with retryability info */
