@@ -155,6 +155,11 @@ class SuggestionsCountResponse(BaseModel):
     poll_interval_ms: int
 
 
+class QueueCountResponse(BaseModel):
+    queued_runs: int
+    poll_interval_ms: int
+
+
 class MarkdownPreviewConfigResponse(BaseModel):
     title: str
     default_markdown: str
@@ -608,6 +613,15 @@ def get_suggestions_count(session: Session = Depends(get_session)):
         select(func.count(Run.id)).where(Run.workflow == SDLC_WORKFLOW)
     ).one()
     return {"total_suggestions": count, "poll_interval_ms": 10000}
+
+
+@router.get("/queue-count", response_model=QueueCountResponse)
+def get_queue_count(session: Session = Depends(get_session)):
+    """Return the number of runs currently in the queue."""
+    count = session.exec(
+        select(func.count(Run.id)).where(Run.status.in_(["pending", "claimed"]))
+    ).one()
+    return {"queued_runs": count, "poll_interval_ms": 5000}
 
 
 @router.get("/markdown-preview-config", response_model=MarkdownPreviewConfigResponse)
