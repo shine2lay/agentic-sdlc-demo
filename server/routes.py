@@ -97,6 +97,9 @@ class BackToTopConfigResponse(BaseModel):
     border_radius: str
     transition_ms: int
     scroll_behavior: str
+    scroll_duration_ms: int
+    scroll_easing: str
+    respect_reduced_motion: bool
 
 
 class ParallaxConfigResponse(BaseModel):
@@ -352,6 +355,9 @@ def get_back_to_top_config():
         "border_radius": "50%",
         "transition_ms": 200,
         "scroll_behavior": "smooth",
+        "scroll_duration_ms": 600,
+        "scroll_easing": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "respect_reduced_motion": True,
     }
 
 
