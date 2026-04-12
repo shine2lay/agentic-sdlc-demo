@@ -344,6 +344,11 @@ class ProgrammingJokeResponse(BaseModel):
     category: str
 
 
+class AgentFunFactResponse(BaseModel):
+    fact: str
+    category: str
+
+
 class PaletteColor(BaseModel):
     hex: str
     rgb: str
@@ -696,6 +701,26 @@ def get_pixel_art_config():
 def get_programming_joke():
     """Return a random programming joke."""
     return random.choice(PROGRAMMING_JOKES)
+
+
+AI_AGENT_FUN_FACTS = [
+    {"fact": "These 25 agents coordinate through a multi-stage DAG workflow.", "category": "architecture"},
+    {"fact": "Each AI agent specializes in one task, like microservices for thinking.", "category": "architecture"},
+    {"fact": "The safety reviewer agent has vetoed more suggestions than any human.", "category": "safety"},
+    {"fact": "AI agents don't need coffee breaks, but they do need token budgets.", "category": "humor"},
+    {"fact": "The code review agent checks for OWASP Top 10 on every deploy.", "category": "security"},
+    {"fact": "The planning agent writes tests before code — true TDD.", "category": "process"},
+    {"fact": "On average, an AI agent completes its task in under 60 seconds.", "category": "performance"},
+    {"fact": "The deploy agent only ships code that passes every prior stage.", "category": "safety"},
+    {"fact": "These agents have processed thousands of community suggestions.", "category": "community"},
+    {"fact": "All 25 agents run in parallel stages to maximize throughput.", "category": "performance"},
+]
+
+
+@router.get("/agent-fun-fact", response_model=AgentFunFactResponse)
+def get_agent_fun_fact():
+    """Return a random fun fact about the AI agents."""
+    return random.choice(AI_AGENT_FUN_FACTS)
 
 
 @router.get("/bounce-button-config", response_model=BounceButtonConfigResponse)

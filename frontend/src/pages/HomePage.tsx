@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, fetchAgentFunFact, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig, type AgentFunFact } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 import { formatCost } from '../lib/utils';
 
@@ -278,6 +278,7 @@ export function HomePage() {
   const [communityCreations, setCommunityCreations] = useState<CommunityCreationsConfig | null>(null);
   const [shimmerConfig, setShimmerConfig] = useState<ActiveTabShimmerConfig | null>(null);
   const [confettiRunIds, setConfettiRunIds] = useState<Set<string>>(new Set());
+  const [agentFunFact, setAgentFunFact] = useState<string>('');
   const prevOutcomesRef = useRef<Map<string, RunOutcome>>(new Map());
   const isFirstFetchRef = useRef(true);
   const heroBgRef = useRef<HTMLDivElement>(null);
@@ -400,6 +401,14 @@ export function HomePage() {
     scrollRef.current?.scrollTo({ top: 0, behavior: backToTopConfig?.scroll_behavior ?? 'smooth' });
   }, [backToTopConfig]);
 
+  const handleAgentHover = useCallback(() => {
+    if (!agentFunFact) {
+      fetchAgentFunFact()
+        .then(data => setAgentFunFact(data.fact))
+        .catch(() => setAgentFunFact('25 AI agents power this pipeline!'));
+    }
+  }, [agentFunFact]);
+
   const stats = useMemo(() => {
     const outcomes = runs.map(r => getOutcome(r));
     const deployed = outcomes.filter(o => o === 'deployed').length;
@@ -513,7 +522,11 @@ export function HomePage() {
                 <div className="text-2xl font-bold text-[var(--temper-text)]">10</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">pipeline stages</div>
               </div>
-              <div>
+              <div
+                onMouseEnter={handleAgentHover}
+                title={agentFunFact || undefined}
+                className="cursor-help"
+              >
                 <div className="text-2xl font-bold text-[var(--temper-text)]">25</div>
                 <div className="text-xs text-[var(--temper-text-dim)]">AI agents</div>
               </div>

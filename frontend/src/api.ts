@@ -201,6 +201,17 @@ export async function fetchProgrammingJoke(): Promise<ProgrammingJoke> {
   return res.json();
 }
 
+export interface AgentFunFact {
+  fact: string;
+  category: string;
+}
+
+export async function fetchAgentFunFact(): Promise<AgentFunFact> {
+  const res = await fetch(`${API_URL}/api/agent-fun-fact`);
+  if (!res.ok) throw new Error(`Fetch agent fun fact failed: ${res.status}`);
+  return res.json();
+}
+
 export interface BounceButtonConfig {
   enabled: boolean;
   scale_start: number;

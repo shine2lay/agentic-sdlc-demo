@@ -1,41 +1,55 @@
-"""Acceptance tests for pixel-art-config endpoint and existing config endpoints."""
+"""Acceptance tests for GET /api/agent-fun-fact endpoint.
+
+Tests that the endpoint returns a random fun fact about the AI agents
+with 'fact' (str) and 'category' (str) fields, where category is one
+of the known categories.
+
+These tests are expected to FAIL until the feature is implemented.
+"""
+
 import sys
 from fastapi.testclient import TestClient
 from server.app import app
 
 client = TestClient(app)
 
+VALID_CATEGORIES = [
+    "architecture", "safety", "humor", "security",
+    "process", "performance", "community",
+]
 
-def test_pixel_art_config_returns_200_with_all_fields():
-    response = client.get('/api/pixel-art-config')
-    assert response.status_code == 200, f'Expected 200, got {response.status_code}'
-    assert response.headers['content-type'] == 'application/json'
+
+def test_agent_fun_fact_returns_200_with_valid_payload():
+    response = client.get("/api/agent-fun-fact")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
-    assert len(data) == 9, f'Expected 9 fields, got {len(data)}: {list(data.keys())}'
-    assert data['title'] == 'Pixel Art Canvas'
-    assert data['grid_size'] == 16
-    assert data['default_color'] == '#ffffff'
-    assert data['pixel_size_px'] == 24
-    assert data['grid_line_color'] == '#e5e7eb'
-    assert data['grid_line_width_px'] == 1
-    assert len(data['palette_colors']) == 16, f'Expected 16 palette colors, got {len(data["palette_colors"])}'
-    assert data['show_gridlines'] is True
-    assert data['background_color'] == '#ffffff'
-    print('PASS: pixel art config returns 200 with all fields')
+    assert "fact" in data, "Response missing 'fact' field"
+    assert "category" in data, "Response missing 'category' field"
+    assert isinstance(data["fact"], str) and len(data["fact"]) > 0, "fact must be a non-empty string"
+    assert data["category"] in VALID_CATEGORIES, (
+        f"category '{data['category']}' not in {VALID_CATEGORIES}"
+    )
+    print("PASS: agent fun fact returns 200 with valid payload")
 
 
-def test_existing_endpoints_not_regressed():
-    for path in ['/api/deploy-checkmark-config', '/api/active-tab-shimmer-config', '/api/typing-test-config', '/api/color-picker-config', '/api/bounce-button-config', '/api/confetti-config', '/api/palette-config', '/api/suggestion-chip-bounce-config', '/api/queue-count', '/api/pixel-art-config']:
-        resp = client.get(path)
-        assert resp.status_code == 200, f'{path} regressed: {resp.status_code}'
-    print('PASS: existing config endpoints not regressed')
+def test_agent_fun_fact_facts_are_under_90_chars():
+    # Call multiple times to sample facts and verify length constraint
+    seen_facts = set()
+    for _ in range(30):
+        response = client.get("/api/agent-fun-fact")
+        assert response.status_code == 200
+        fact = response.json()["fact"]
+        seen_facts.add(fact)
+    for fact in seen_facts:
+        assert len(fact) <= 90, f"Fact exceeds 90 chars ({len(fact)}): {fact}"
+    print(f"PASS: all {len(seen_facts)} sampled facts are under 90 characters")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
-        test_pixel_art_config_returns_200_with_all_fields()
-        test_existing_endpoints_not_regressed()
-        print('ALL TESTS PASSED')
+        test_agent_fun_fact_returns_200_with_valid_payload()
+        test_agent_fun_fact_facts_are_under_90_chars()
+        print("ALL TESTS PASSED")
     except Exception as e:
-        print(f'FAIL: {e}')
+        print(f"FAIL: {e}")
         sys.exit(1)
