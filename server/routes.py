@@ -184,6 +184,18 @@ class BounceButtonConfigResponse(BaseModel):
     target: str
 
 
+class SuggestionChipBounceConfigResponse(BaseModel):
+    enabled: bool
+    translate_y_px: float
+    duration_ms: int
+    easing: str
+    stagger_ms: int
+    initial_delay_ms: int
+    iteration_count: int
+    respect_reduced_motion: bool
+    target: str
+
+
 class ConfettiConfigResponse(BaseModel):
     enabled: bool
     particle_count: int
@@ -659,6 +671,22 @@ def get_bounce_button_config():
         "skip_initial_render": True,
         "respect_reduced_motion": True,
         "target": "submit-button",
+    }
+
+
+@router.get("/suggestion-chip-bounce-config", response_model=SuggestionChipBounceConfigResponse)
+def get_suggestion_chip_bounce_config():
+    """Return configuration for the gentle bounce animation on suggestion chips when the page first loads."""
+    return {
+        "enabled": True,
+        "translate_y_px": 4.0,
+        "duration_ms": 500,
+        "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "stagger_ms": 80,
+        "initial_delay_ms": 300,
+        "iteration_count": 1,
+        "respect_reduced_motion": True,
+        "target": "suggestion-chip",
     }
 
 
