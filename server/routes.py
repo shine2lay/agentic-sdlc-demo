@@ -274,6 +274,27 @@ class EmojiRainConfigResponse(BaseModel):
     target: str
 
 
+class TypingTestConfigResponse(BaseModel):
+    title: str
+    sentences: List[str]
+    time_limit_seconds: int
+    words_per_minute_label: str
+
+
+class TypingTestCalculateRequest(BaseModel):
+    original: str
+    typed: str
+    elapsed_seconds: float
+
+
+class TypingTestCalculateResponse(BaseModel):
+    wpm: float
+    accuracy: float
+    correct_chars: int
+    total_chars: int
+    elapsed_seconds: float
+
+
 class ProgrammingJokeResponse(BaseModel):
     joke: str
     category: str
@@ -609,6 +630,44 @@ def get_emoji_rain_config():
     }
 
 
+@router.get("/typing-test-config", response_model=TypingTestConfigResponse)
+def get_typing_test_config():
+    """Return configuration for the typing speed test."""
+    return {
+        "title": "Typing Speed Test",
+        "sentences": [
+            "The quick brown fox jumps over the lazy dog.",
+            "Pack my box with five dozen liquor jugs.",
+            "How vexingly quick daft zebras jump.",
+            "The five boxing wizards jump quickly.",
+            "Sphinx of black quartz, judge my vow.",
+        ],
+        "time_limit_seconds": 60,
+        "words_per_minute_label": "WPM",
+    }
+
+
+@router.post("/typing-test-calculate", response_model=TypingTestCalculateResponse)
+def calculate_typing_speed(body: TypingTestCalculateRequest):
+    """Calculate typing speed (WPM) and accuracy from original and typed text."""
+    if body.elapsed_seconds <= 0:
+        raise HTTPException(status_code=400, detail="Elapsed time must be positive")
+
+    correct_chars = sum(1 for a, b in zip(body.original, body.typed) if a == b)
+    total_chars = len(body.original)
+    accuracy = round((correct_chars / total_chars) * 100, 1) if total_chars > 0 else 0.0
+    word_count = len(body.typed.strip().split()) if body.typed.strip() else 0
+    wpm = round((word_count / body.elapsed_seconds) * 60, 1)
+
+    return {
+        "wpm": wpm,
+        "accuracy": accuracy,
+        "correct_chars": correct_chars,
+        "total_chars": total_chars,
+        "elapsed_seconds": body.elapsed_seconds,
+    }
+
+
 @router.post("/ascii-art-generate", response_model=AsciiArtResponse)
 def generate_ascii_art_endpoint(body: AsciiArtRequest):
     """Generate block-letter ASCII art from input text."""
@@ -639,6 +698,7 @@ def get_community_creations_config():
             {"name": "ASCII Art Generator", "description": "Turn text into block-letter ASCII art", "path": "/tools/ascii"},
             {"name": "Markdown Preview", "description": "Live preview editor for Markdown syntax", "path": "/tools/markdown"},
             {"name": "Countdown Timer", "description": "A simple countdown timer with start, stop, and reset controls", "path": "/tools/timer"},
+            {"name": "Typing Speed Test", "description": "Test your typing speed and accuracy", "path": "/games/typing-test"},
         ],
     }
 

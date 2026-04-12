@@ -260,6 +260,37 @@ export async function fetchCommunityCreationsConfig(): Promise<CommunityCreation
   return res.json();
 }
 
+export interface TypingTestConfig {
+  title: string;
+  sentences: string[];
+  time_limit_seconds: number;
+  words_per_minute_label: string;
+}
+
+export interface TypingTestResult {
+  wpm: number;
+  accuracy: number;
+  correct_chars: number;
+  total_chars: number;
+  elapsed_seconds: number;
+}
+
+export async function fetchTypingTestConfig(): Promise<TypingTestConfig> {
+  const res = await fetch(`${API_URL}/api/typing-test-config`);
+  if (!res.ok) throw new Error(`Fetch typing test config failed: ${res.status}`);
+  return res.json();
+}
+
+export async function calculateTypingSpeed(original: string, typed: string, elapsed_seconds: number): Promise<TypingTestResult> {
+  const res = await fetch(`${API_URL}/api/typing-test-calculate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ original, typed, elapsed_seconds }),
+  });
+  if (!res.ok) throw new Error(`Calculate typing speed failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
