@@ -130,6 +130,37 @@ export async function fetchColorPickerConfig(): Promise<ColorPickerConfig> {
   return res.json();
 }
 
+export interface PaletteConfig {
+  title: string;
+  description: string;
+  harmony_strategies: string[];
+  colors_per_palette: number;
+}
+
+export async function fetchPaletteConfig(): Promise<PaletteConfig> {
+  const res = await fetch(`${API_URL}/api/palette-config`);
+  if (!res.ok) throw new Error(`Fetch palette config failed: ${res.status}`);
+  return res.json();
+}
+
+export interface PaletteColor {
+  hex: string;
+  rgb: string;
+  hsl: string;
+}
+
+export interface PaletteGenerateResult {
+  colors: PaletteColor[];
+  harmony: string;
+  seed_hue: number;
+}
+
+export async function fetchPaletteGenerate(): Promise<PaletteGenerateResult> {
+  const res = await fetch(`${API_URL}/api/palette-generate`);
+  if (!res.ok) throw new Error(`Fetch palette generate failed: ${res.status}`);
+  return res.json();
+}
+
 export interface SuggestionsCountData {
   total_suggestions: number;
   poll_interval_ms: number;

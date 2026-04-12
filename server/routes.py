@@ -327,6 +327,25 @@ class ProgrammingJokeResponse(BaseModel):
     category: str
 
 
+class PaletteColor(BaseModel):
+    hex: str
+    rgb: str
+    hsl: str
+
+
+class PaletteGenerateResponse(BaseModel):
+    colors: List[PaletteColor]
+    harmony: str
+    seed_hue: int
+
+
+class PaletteConfigResponse(BaseModel):
+    title: str
+    description: str
+    harmony_strategies: List[str]
+    colors_per_palette: int
+
+
 PROGRAMMING_JOKES = [
     {"joke": "Why do programmers prefer dark mode? Because light attracts bugs.", "category": "general"},
     {"joke": "There are only 10 types of people in the world: those who understand binary and those who don't.", "category": "general"},
@@ -410,6 +429,63 @@ def generate_block_art(text: str, block_char: str, empty_char: str) -> str:
         rows.append(row)
 
     return '\n'.join(rows)
+
+
+def hsl_to_rgb(h: int, s: int, l: int) -> tuple:
+    """Convert HSL values to RGB. h: 0-359, s: 0-100, l: 0-100."""
+    s_norm = s / 100.0
+    l_norm = l / 100.0
+    c = (1 - abs(2 * l_norm - 1)) * s_norm
+    x = c * (1 - abs((h / 60.0) % 2 - 1))
+    m = l_norm - c / 2.0
+    if h < 60:
+        r1, g1, b1 = c, x, 0
+    elif h < 120:
+        r1, g1, b1 = x, c, 0
+    elif h < 180:
+        r1, g1, b1 = 0, c, x
+    elif h < 240:
+        r1, g1, b1 = 0, x, c
+    elif h < 300:
+        r1, g1, b1 = x, 0, c
+    else:
+        r1, g1, b1 = c, 0, x
+    return (round((r1 + m) * 255), round((g1 + m) * 255), round((b1 + m) * 255))
+
+
+def generate_harmonious_palette() -> dict:
+    """Generate a random palette of 5 harmonious colors."""
+    seed_hue = random.randint(0, 359)
+    harmony = random.choice(['analogous', 'triadic', 'split-complementary', 'tetradic-plus', 'monochromatic'])
+
+    if harmony == 'analogous':
+        hues = [(seed_hue + i * 30) % 360 for i in range(5)]
+    elif harmony == 'triadic':
+        hues = [(seed_hue + offset) % 360 for offset in [0, 120, 240, 30, 150]]
+    elif harmony == 'split-complementary':
+        hues = [(seed_hue + offset) % 360 for offset in [0, 150, 210, 30, 180]]
+    elif harmony == 'tetradic-plus':
+        hues = [(seed_hue + offset) % 360 for offset in [0, 90, 180, 270, 45]]
+    else:  # monochromatic
+        hues = [seed_hue] * 5
+
+    colors = []
+    if harmony == 'monochromatic':
+        sl_pairs = [(70, 45), (60, 55), (80, 50), (55, 60), (75, 40)]
+        for i, h in enumerate(hues):
+            s, l = sl_pairs[i]
+            r, g, b = hsl_to_rgb(h, s, l)
+            hex_val = f'#{r:02x}{g:02x}{b:02x}'
+            colors.append({'hex': hex_val, 'rgb': f'rgb({r}, {g}, {b})', 'hsl': f'hsl({h}, {s}%, {l}%)'})
+    else:
+        for h in hues:
+            s = random.randint(55, 85)
+            l = random.randint(40, 65)
+            r, g, b = hsl_to_rgb(h, s, l)
+            hex_val = f'#{r:02x}{g:02x}{b:02x}'
+            colors.append({'hex': hex_val, 'rgb': f'rgb({r}, {g}, {b})', 'hsl': f'hsl({h}, {s}%, {l}%)'})
+
+    return {'colors': colors, 'harmony': harmony, 'seed_hue': seed_hue}
 
 
 # ── Utility endpoints ──────────────────────────────────────────────
@@ -543,6 +619,23 @@ def get_color_picker_config():
         "show_preview": True,
         "preset_colors": ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff", "#000000"],
     }
+
+
+@router.get("/palette-config", response_model=PaletteConfigResponse)
+def get_palette_config():
+    """Return configuration for the palette generator tool."""
+    return {
+        "title": "Color Palette Generator",
+        "description": "Generate harmonious color palettes with a single click",
+        "harmony_strategies": ["analogous", "triadic", "split-complementary", "tetradic-plus", "monochromatic"],
+        "colors_per_palette": 5,
+    }
+
+
+@router.get("/palette-generate", response_model=PaletteGenerateResponse)
+def generate_palette():
+    """Generate a random palette of 5 harmonious colors."""
+    return generate_harmonious_palette()
 
 
 @router.get("/programming-joke", response_model=ProgrammingJokeResponse)
@@ -761,6 +854,7 @@ def get_community_creations_config():
             {"name": "Markdown Preview", "description": "Live preview editor for Markdown syntax", "path": "/tools/markdown"},
             {"name": "Countdown Timer", "description": "A simple countdown timer with start, stop, and reset controls", "path": "/tools/timer"},
             {"name": "Typing Speed Test", "description": "Test your typing speed and accuracy", "path": "/games/typing-test"},
+            {"name": "Palette Generator", "description": "Generate harmonious color palettes with one click", "path": "/tools/palette"},
         ],
     }
 
