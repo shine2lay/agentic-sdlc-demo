@@ -32,8 +32,11 @@ export function TypingTestPage() {
     const value = e.target.value;
     if (status === 'finished') return;
 
+    let currentStartTime = startTime;
+
     if (status === 'idle') {
       const now = Date.now();
+      currentStartTime = now;
       setStartTime(now);
       setStatus('running');
       intervalRef.current = window.setInterval(() => {
@@ -49,8 +52,8 @@ export function TypingTestPage() {
         intervalRef.current = null;
       }
       setStatus('finished');
-      const elapsed = (Date.now() - (startTime || Date.now())) / 1000;
-      calculateTypingSpeed(sentence, value, elapsed).then(setResult);
+      const elapsed = (Date.now() - (currentStartTime || Date.now())) / 1000;
+      calculateTypingSpeed(sentence, value, elapsed).then(setResult).catch(console.error);
     }
   }, [status, sentence, startTime]);
 
@@ -110,6 +113,7 @@ export function TypingTestPage() {
           <div className="mt-4 p-4 rounded bg-[var(--temper-bg)] border border-[var(--temper-border)]">
             <p className="text-xl font-bold text-[var(--temper-accent)]">{result.wpm} WPM</p>
             <p className="text-[var(--temper-text)]">Accuracy: {result.accuracy}%</p>
+            <p className="text-[var(--temper-text)]">Time: {result.elapsed_seconds.toFixed(1)}s</p>
             <p className="text-[var(--temper-text-muted)] text-sm">
               {result.correct_chars} / {result.total_chars} correct characters
             </p>

@@ -960,18 +960,19 @@ def calculate_typing_speed(body: TypingTestCalculateRequest):
     if body.elapsed_seconds <= 0:
         raise HTTPException(status_code=400, detail="Elapsed time must be positive")
 
+    elapsed = max(body.elapsed_seconds, 0.1)
     correct_chars = sum(1 for a, b in zip(body.original, body.typed) if a == b)
     total_chars = len(body.original)
     accuracy = round((correct_chars / total_chars) * 100, 1) if total_chars > 0 else 0.0
     word_count = len(body.typed.strip().split()) if body.typed.strip() else 0
-    wpm = round((word_count / body.elapsed_seconds) * 60, 1)
+    wpm = round((word_count / elapsed) * 60, 1)
 
     return {
         "wpm": wpm,
         "accuracy": accuracy,
         "correct_chars": correct_chars,
         "total_chars": total_chars,
-        "elapsed_seconds": body.elapsed_seconds,
+        "elapsed_seconds": elapsed,
     }
 
 
