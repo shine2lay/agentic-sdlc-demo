@@ -122,6 +122,7 @@ export interface ColorPickerConfig {
   formats: string[];
   show_preview: boolean;
   preset_colors: string[];
+  hex_input_placeholder: string;
 }
 
 export async function fetchColorPickerConfig(): Promise<ColorPickerConfig> {

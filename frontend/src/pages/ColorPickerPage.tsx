@@ -31,11 +31,13 @@ export function ColorPickerPage() {
   });
 
   const [color, setColor] = useState('#000000');
+  const [hexInput, setHexInput] = useState('');
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (config && !initialized) {
       setColor(config.default_color);
+      setHexInput(config.default_color);
       setInitialized(true);
     }
   }, [config, initialized]);
@@ -50,17 +52,35 @@ export function ColorPickerPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <h1 className="text-2xl font-bold text-[var(--temper-text)] p-4 pb-2 text-center">{config.title}</h1>
       <div className="flex flex-col items-center gap-4 p-4 pt-2">
-        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-20 h-20 cursor-pointer" />
+        <input type="color" value={color} onChange={e => { setColor(e.target.value); setHexInput(e.target.value); }} className="w-20 h-20 cursor-pointer" />
         <div className="flex gap-2 flex-wrap justify-center">
           {config.preset_colors.map(swatch => (
             <button
               key={swatch}
-              onClick={() => setColor(swatch)}
+              onClick={() => { setColor(swatch); setHexInput(swatch); }}
               style={{ backgroundColor: swatch }}
               aria-label={`Select color ${swatch}`}
               className="w-8 h-8 rounded border border-[var(--temper-border)]"
             />
           ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={hexInput}
+            placeholder={config.hex_input_placeholder}
+            onChange={e => {
+              const val = e.target.value;
+              setHexInput(val);
+              const normalized = val.trim().startsWith('#') ? val.trim() : '#' + val.trim();
+              if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+                setColor(normalized.toLowerCase());
+              }
+            }}
+            className="px-3 py-2 rounded border border-[var(--temper-border)] bg-[var(--temper-bg)] text-[var(--temper-text)] font-mono text-sm w-32"
+            maxLength={7}
+            aria-label="Enter hex color code"
+          />
         </div>
         {config.show_preview && (
           <div style={{ backgroundColor: color }} className="w-32 h-32 rounded border border-[var(--temper-border)]" />

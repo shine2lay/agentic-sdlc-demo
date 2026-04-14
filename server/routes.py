@@ -173,6 +173,24 @@ class ColorPickerConfigResponse(BaseModel):
     formats: List[str]
     show_preview: bool
     preset_colors: List[str]
+    hex_input_placeholder: str
+
+
+class ColorPickerConvertRequest(BaseModel):
+    hex_code: str
+
+
+class ColorPickerConvertResponse(BaseModel):
+    hex: str
+    rgb: str
+    hsl: str
+    red: int
+    green: int
+    blue: int
+    hue: int
+    saturation: int
+    lightness: int
+    is_valid: bool
 
 
 class BounceButtonConfigResponse(BaseModel):
@@ -694,6 +712,46 @@ def get_color_picker_config():
         "formats": ["hex", "rgb", "hsl"],
         "show_preview": True,
         "preset_colors": ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff", "#000000"],
+        "hex_input_placeholder": "#6366f1",
+    }
+
+
+@router.post("/color-picker-convert", response_model=ColorPickerConvertResponse)
+def convert_color_hex(body: ColorPickerConvertRequest):
+    """Convert a hex color code to RGB and HSL formats."""
+    import re
+    hex_code = body.hex_code.strip()
+    if not hex_code.startswith("#"):
+        hex_code = "#" + hex_code
+    if not re.match(r'^#[0-9a-fA-F]{6}$', hex_code):
+        raise HTTPException(status_code=400, detail="Invalid hex color code. Expected 6-digit hex like #ff5733 or ff5733.")
+    r = int(hex_code[1:3], 16)
+    g = int(hex_code[3:5], 16)
+    b = int(hex_code[5:7], 16)
+    r1, g1, b1 = r / 255.0, g / 255.0, b / 255.0
+    mx, mn = max(r1, g1, b1), min(r1, g1, b1)
+    l = (mx + mn) / 2.0
+    if mx == mn:
+        h = s = 0.0
+    else:
+        d = mx - mn
+        s = d / (2.0 - mx - mn) if l > 0.5 else d / (mx + mn)
+        if mx == r1:
+            h = ((g1 - b1) / d + (6 if g1 < b1 else 0)) / 6.0
+        elif mx == g1:
+            h = ((b1 - r1) / d + 2) / 6.0
+        else:
+            h = ((r1 - g1) / d + 4) / 6.0
+    h_deg = round(h * 360)
+    s_pct = round(s * 100)
+    l_pct = round(l * 100)
+    return {
+        "hex": hex_code.upper(),
+        "rgb": f"rgb({r}, {g}, {b})",
+        "hsl": f"hsl({h_deg}, {s_pct}%, {l_pct}%)",
+        "red": r, "green": g, "blue": b,
+        "hue": h_deg, "saturation": s_pct, "lightness": l_pct,
+        "is_valid": True,
     }
 
 

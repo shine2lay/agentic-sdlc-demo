@@ -8,6 +8,8 @@ Tests cover:
   the relative-timestamp feature which is handled client-side)
 - typing-test-config endpoint returns expected fields
 - typing-test-calculate endpoint: valid input, mistyped input, near-zero elapsed clamping
+- color-picker-config endpoint returns hex_input_placeholder field
+- color-picker-convert endpoint: valid hex conversion, invalid hex rejection
 """
 
 import sys
@@ -243,6 +245,82 @@ def test_typing_test_calculate_near_zero_elapsed():
     print("PASS: typing-test-calculate with near-zero elapsed clamps to 0.1")
 
 
+def test_color_picker_config_returns_expected_fields():
+    """GET /api/color-picker-config returns 200 with all 6 fields including hex_input_placeholder."""
+    response = client.get("/api/color-picker-config")
+    assert response.status_code == 200, f"Expected 200 but got {response.status_code}"
+    data = response.json()
+
+    # Verify all 6 expected fields exist
+    expected_fields = {"title", "default_color", "formats", "show_preview", "preset_colors", "hex_input_placeholder"}
+    missing = expected_fields - set(data.keys())
+    assert not missing, f"Missing fields: {missing}"
+
+    # Verify types
+    assert isinstance(data["title"], str), f"title should be str, got {type(data['title']).__name__}"
+    assert isinstance(data["default_color"], str), f"default_color should be str, got {type(data['default_color']).__name__}"
+    assert isinstance(data["formats"], list), f"formats should be list, got {type(data['formats']).__name__}"
+    assert isinstance(data["show_preview"], bool), f"show_preview should be bool, got {type(data['show_preview']).__name__}"
+    assert isinstance(data["preset_colors"], list), f"preset_colors should be list, got {type(data['preset_colors']).__name__}"
+    assert isinstance(data["hex_input_placeholder"], str), f"hex_input_placeholder should be str, got {type(data['hex_input_placeholder']).__name__}"
+
+    # Verify preset_colors has exactly 9 items
+    assert len(data["preset_colors"]) == 9, f"preset_colors should have 9 items, got {len(data['preset_colors'])}"
+
+    # Verify hex_input_placeholder value
+    assert data["hex_input_placeholder"] == "#6366f1", (
+        f"hex_input_placeholder should be '#6366f1', got {data['hex_input_placeholder']!r}"
+    )
+
+    print("PASS: color-picker-config returns all 6 fields including hex_input_placeholder")
+
+
+def test_color_picker_convert_valid_hex():
+    """POST /api/color-picker-convert with valid hex returns 200 with correct RGB, HSL, and hex."""
+    response = client.post("/api/color-picker-convert", json={"hex_code": "#ff5733"})
+    assert response.status_code == 200, f"Expected 200 but got {response.status_code}"
+    data = response.json()
+
+    # Verify hex is uppercased
+    assert data["hex"] == "#FF5733", f"hex should be '#FF5733', got {data['hex']!r}"
+
+    # Verify RGB components
+    assert data["red"] == 255, f"red should be 255, got {data['red']}"
+    assert data["green"] == 87, f"green should be 87, got {data['green']}"
+    assert data["blue"] == 51, f"blue should be 51, got {data['blue']}"
+
+    # Verify rgb string
+    assert data["rgb"] == "rgb(255, 87, 51)", f"rgb should be 'rgb(255, 87, 51)', got {data['rgb']!r}"
+
+    # Verify is_valid
+    assert data["is_valid"] is True, f"is_valid should be True, got {data['is_valid']!r}"
+
+    # Verify HSL values are present and numeric
+    assert isinstance(data["hue"], int), f"hue should be int, got {type(data['hue']).__name__}"
+    assert isinstance(data["saturation"], int), f"saturation should be int, got {type(data['saturation']).__name__}"
+    assert isinstance(data["lightness"], int), f"lightness should be int, got {type(data['lightness']).__name__}"
+
+    # Verify hsl string is present
+    assert "hsl" in data, "Missing field: hsl"
+    assert isinstance(data["hsl"], str), f"hsl should be str, got {type(data['hsl']).__name__}"
+
+    print("PASS: color-picker-convert with valid hex returns correct results")
+
+
+def test_color_picker_convert_invalid_hex():
+    """POST /api/color-picker-convert with invalid hex returns 400 with descriptive error."""
+    response = client.post("/api/color-picker-convert", json={"hex_code": "notacolor"})
+    assert response.status_code == 400, f"Expected 400 but got {response.status_code}"
+    data = response.json()
+
+    assert "detail" in data, "Error response missing 'detail' field"
+    assert "Invalid hex color code" in data["detail"], (
+        f"detail should contain 'Invalid hex color code', got {data['detail']!r}"
+    )
+
+    print("PASS: color-picker-convert with invalid hex returns 400 with descriptive error")
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
@@ -254,6 +332,9 @@ if __name__ == "__main__":
         test_typing_test_calculate_valid_input,
         test_typing_test_calculate_mistyped_input,
         test_typing_test_calculate_near_zero_elapsed,
+        test_color_picker_config_returns_expected_fields,
+        test_color_picker_convert_valid_hex,
+        test_color_picker_convert_invalid_hex,
     ]:
         try:
             test_fn()
