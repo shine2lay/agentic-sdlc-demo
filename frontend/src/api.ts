@@ -369,6 +369,35 @@ export async function fetchActiveTabShimmerConfig(): Promise<ActiveTabShimmerCon
   return res.json();
 }
 
+export interface PipelineStageTooltip {
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface PipelineStageTooltipConfig {
+  enabled: boolean;
+  stages: PipelineStageTooltip[];
+  show_delay_ms: number;
+  hide_delay_ms: number;
+  position: string;
+  max_width_px: number;
+  bg_color: string;
+  text_color: string;
+  border_radius_px: number;
+  font_size_px: number;
+  padding_px: number;
+  arrow_size_px: number;
+  respect_reduced_motion: boolean;
+  target: string;
+}
+
+export async function fetchPipelineStageTooltipConfig(): Promise<PipelineStageTooltipConfig> {
+  const res = await fetch(`${API_URL}/api/pipeline-stage-tooltip-config`);
+  if (!res.ok) throw new Error(`Fetch pipeline stage tooltip config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

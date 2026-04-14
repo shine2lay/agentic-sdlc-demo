@@ -10,6 +10,7 @@ Tests cover:
 - typing-test-calculate endpoint: valid input, mistyped input, near-zero elapsed clamping
 - color-picker-config endpoint returns hex_input_placeholder field
 - color-picker-convert endpoint: valid hex conversion, invalid hex rejection
+- pipeline-stage-tooltip-config endpoint returns 7 stages with correct names, descriptions, icons, and config
 """
 
 import sys
@@ -321,6 +322,61 @@ def test_color_picker_convert_invalid_hex():
     print("PASS: color-picker-convert with invalid hex returns 400 with descriptive error")
 
 
+EXPECTED_STAGE_NAMES = ["Validate", "Analyze", "Plan", "Build", "Review", "Push", "Verify"]
+
+
+def test_pipeline_stage_tooltip_config():
+    """GET /api/pipeline-stage-tooltip-config returns 200 with all config fields and exactly 7 stages."""
+    response = client.get("/api/pipeline-stage-tooltip-config")
+    assert response.status_code == 200, f"Expected 200 but got {response.status_code}"
+    data = response.json()
+
+    # Top-level boolean/config fields
+    assert data["enabled"] is True, f"enabled should be True, got {data['enabled']!r}"
+    assert data["show_delay_ms"] == 200, f"show_delay_ms should be 200, got {data['show_delay_ms']}"
+    assert data["hide_delay_ms"] == 150, f"hide_delay_ms should be 150, got {data['hide_delay_ms']}"
+    assert data["position"] == "top", f"position should be 'top', got {data['position']!r}"
+    assert data["max_width_px"] == 220, f"max_width_px should be 220, got {data['max_width_px']}"
+    assert data["bg_color"] == "var(--temper-surface)", f"bg_color mismatch: {data['bg_color']!r}"
+    assert data["text_color"] == "var(--temper-text)", f"text_color mismatch: {data['text_color']!r}"
+    assert data["border_radius_px"] == 8, f"border_radius_px should be 8, got {data['border_radius_px']}"
+    assert data["font_size_px"] == 12, f"font_size_px should be 12, got {data['font_size_px']}"
+    assert data["padding_px"] == 10, f"padding_px should be 10, got {data['padding_px']}"
+    assert data["arrow_size_px"] == 6, f"arrow_size_px should be 6, got {data['arrow_size_px']}"
+    assert data["respect_reduced_motion"] is True, f"respect_reduced_motion should be True, got {data['respect_reduced_motion']!r}"
+    assert data["target"] == "pipeline-stage", f"target should be 'pipeline-stage', got {data['target']!r}"
+
+    # Stages: exactly 7 in the correct order
+    stages = data["stages"]
+    assert isinstance(stages, list), f"stages should be a list, got {type(stages).__name__}"
+    assert len(stages) == 7, f"Expected 7 stages, got {len(stages)}"
+
+    actual_names = [s["name"] for s in stages]
+    assert actual_names == EXPECTED_STAGE_NAMES, (
+        f"Stage names mismatch: expected {EXPECTED_STAGE_NAMES}, got {actual_names}"
+    )
+
+    # Each stage must have non-empty description and icon
+    for stage in stages:
+        assert isinstance(stage["description"], str) and len(stage["description"]) > 0, (
+            f"Stage '{stage['name']}' should have a non-empty description"
+        )
+        assert isinstance(stage["icon"], str) and len(stage["icon"]) > 0, (
+            f"Stage '{stage['name']}' should have a non-empty icon"
+        )
+
+    print("PASS: pipeline-stage-tooltip-config returns all fields with 7 correct stages")
+
+
+def test_pipeline_glow_config_still_works():
+    """GET /api/pipeline-glow-config still returns 200 (regression check for nearest neighbor endpoint)."""
+    response = client.get("/api/pipeline-glow-config")
+    assert response.status_code == 200, f"Expected 200 but got {response.status_code}"
+    data = response.json()
+    assert "enabled" in data, "pipeline-glow-config response missing 'enabled' field"
+    print("PASS: pipeline-glow-config still returns 200 (regression)")
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
@@ -335,6 +391,8 @@ if __name__ == "__main__":
         test_color_picker_config_returns_expected_fields,
         test_color_picker_convert_valid_hex,
         test_color_picker_convert_invalid_hex,
+        test_pipeline_stage_tooltip_config,
+        test_pipeline_glow_config_still_works,
     ]:
         try:
             test_fn()

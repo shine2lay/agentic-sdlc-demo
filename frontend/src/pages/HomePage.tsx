@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, fetchAgentFunFact, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig, type AgentFunFact } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, fetchAgentFunFact, fetchPipelineStageTooltipConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig, type AgentFunFact, type PipelineStageTooltipConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 import { formatCost } from '../lib/utils';
 
@@ -91,9 +91,13 @@ const STAGES = ['Validate', 'Analyze', 'Plan', 'Build', 'Review', 'Push', 'Verif
 
 function PipelineAnimation() {
   const [active, setActive] = useState(0);
+  const [tooltipConfig, setTooltipConfig] = useState<PipelineStageTooltipConfig | null>(null);
   useEffect(() => {
     const timer = setInterval(() => setActive(a => (a + 1) % STAGES.length), 800);
     return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    fetchPipelineStageTooltipConfig().then(setTooltipConfig).catch(() => {});
   }, []);
 
   return (
@@ -107,6 +111,7 @@ function PipelineAnimation() {
                 i === active ? 'bg-[var(--temper-accent)]/20 text-[var(--temper-accent)] border-2 border-[var(--temper-accent)] scale-110 animate-pulse-glow' :
                 'bg-[var(--temper-surface)] text-[var(--temper-text-dim)] border-2 border-[var(--temper-border)]'
               }`}
+              title={tooltipConfig?.enabled ? tooltipConfig.stages.find(s => s.name === stage)?.description : undefined}
             >
               {i < active ? '✓' : i + 1}
             </div>

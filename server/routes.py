@@ -272,6 +272,29 @@ class PipelineGlowConfigResponse(BaseModel):
     target: str
 
 
+class PipelineStageTooltip(BaseModel):
+    name: str
+    description: str
+    icon: str
+
+
+class PipelineStageTooltipConfigResponse(BaseModel):
+    enabled: bool
+    stages: List[PipelineStageTooltip]
+    show_delay_ms: int
+    hide_delay_ms: int
+    position: str
+    max_width_px: int
+    bg_color: str
+    text_color: str
+    border_radius_px: int
+    font_size_px: int
+    padding_px: int
+    arrow_size_px: int
+    respect_reduced_motion: bool
+    target: str
+
+
 class AsciiArtConfigResponse(BaseModel):
     enabled: bool
     title: str
@@ -908,6 +931,35 @@ def get_pipeline_glow_config():
         "max_opacity": 0.7,
         "animation_duration_ms": 2000,
         "total_stages": 7,
+        "respect_reduced_motion": True,
+        "target": "pipeline-stage",
+    }
+
+
+@router.get("/pipeline-stage-tooltip-config", response_model=PipelineStageTooltipConfigResponse)
+def get_pipeline_stage_tooltip_config():
+    """Return configuration and descriptions for tooltips on pipeline stage circles."""
+    return {
+        "enabled": True,
+        "stages": [
+            {"name": "Validate", "description": "Checks that the suggestion input is well-formed and safe to process", "icon": "\u2713"},
+            {"name": "Analyze", "description": "Reads the codebase to understand structure and find relevant files", "icon": "\U0001f50d"},
+            {"name": "Plan", "description": "Designs an implementation strategy and picks the files to change", "icon": "\U0001f4cb"},
+            {"name": "Build", "description": "Writes the code changes according to the plan", "icon": "\U0001f528"},
+            {"name": "Review", "description": "Checks the changes for correctness, style, and potential issues", "icon": "\U0001f440"},
+            {"name": "Push", "description": "Commits the changes and pushes them to the repository", "icon": "\U0001f680"},
+            {"name": "Verify", "description": "Runs tests and confirms the deployment succeeded", "icon": "\u2705"},
+        ],
+        "show_delay_ms": 200,
+        "hide_delay_ms": 150,
+        "position": "top",
+        "max_width_px": 220,
+        "bg_color": "var(--temper-surface)",
+        "text_color": "var(--temper-text)",
+        "border_radius_px": 8,
+        "font_size_px": 12,
+        "padding_px": 10,
+        "arrow_size_px": 6,
         "respect_reduced_motion": True,
         "target": "pipeline-stage",
     }
