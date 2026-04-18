@@ -454,6 +454,15 @@ class PixelArtConfigResponse(BaseModel):
     background_color: str
 
 
+class GreetingConfigResponse(BaseModel):
+    enabled: bool
+    greetings: dict
+    boundaries: dict
+    emoji_map: dict
+    text_color: str
+    animation: str
+
+
 PROGRAMMING_JOKES = [
     {"joke": "Why do programmers prefer dark mode? Because light attracts bugs.", "category": "general"},
     {"joke": "There are only 10 types of people in the world: those who understand binary and those who don't.", "category": "general"},
@@ -1137,6 +1146,34 @@ def get_noise_texture_config():
         "z_index": -1,
         "respect_reduced_motion": True,
         "target": "page-background",
+    }
+
+
+@router.get("/greeting-config", response_model=GreetingConfigResponse)
+def get_greeting_config():
+    """Return configuration for the time-of-day greeting in the hero section."""
+    return {
+        "enabled": True,
+        "greetings": {
+            "morning": "Good morning",
+            "afternoon": "Good afternoon",
+            "evening": "Good evening",
+            "night": "Good night",
+        },
+        "boundaries": {
+            "morning": 5,
+            "afternoon": 12,
+            "evening": 17,
+            "night": 21,
+        },
+        "emoji_map": {
+            "morning": "\u2600\ufe0f",
+            "afternoon": "\U0001f324\ufe0f",
+            "evening": "\U0001f305",
+            "night": "\U0001f319",
+        },
+        "text_color": "var(--temper-accent)",
+        "animation": "fade",
     }
 
 

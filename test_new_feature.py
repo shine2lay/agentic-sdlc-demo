@@ -11,6 +11,8 @@ Tests cover:
 - color-picker-config endpoint returns hex_input_placeholder field
 - color-picker-convert endpoint: valid hex conversion, invalid hex rejection
 - pipeline-stage-tooltip-config endpoint returns 7 stages with correct names, descriptions, icons, and config
+- greeting-config endpoint returns time-of-day greeting configuration with
+  greetings, boundaries, emoji_map, text_color, and animation fields
 """
 
 import sys
@@ -66,6 +68,17 @@ EXPECTED_RUN_FIELDS = {
     "id", "workflow", "status", "inputs", "created_at",
     "started_at", "completed_at", "error", "has_result",
     "duration_seconds", "total_tokens", "workflow_output", "cost_dollars",
+}
+
+# Expected greeting periods
+EXPECTED_GREETING_PERIODS = {"morning", "afternoon", "evening", "night"}
+
+# Expected boundary values for each period
+EXPECTED_BOUNDARIES = {
+    "morning": 5,
+    "afternoon": 12,
+    "evening": 17,
+    "night": 21,
 }
 
 
@@ -377,6 +390,81 @@ def test_pipeline_glow_config_still_works():
     print("PASS: pipeline-glow-config still returns 200 (regression)")
 
 
+def test_greeting_config_returns_all_fields():
+    """GET /api/greeting-config returns 200 with enabled, greetings, boundaries, emoji_map, text_color, animation."""
+    response = client.get("/api/greeting-config")
+    assert response.status_code == 200, f"Expected 200 but got {response.status_code}"
+    data = response.json()
+
+    # Verify enabled is a boolean set to True
+    assert "enabled" in data, "Missing field: enabled"
+    assert isinstance(data["enabled"], bool), f"enabled should be bool, got {type(data['enabled']).__name__}"
+    assert data["enabled"] is True, f"enabled should be True, got {data['enabled']!r}"
+
+    # Verify greetings is a dict with exactly 4 keys (morning, afternoon, evening, night)
+    assert "greetings" in data, "Missing field: greetings"
+    assert isinstance(data["greetings"], dict), f"greetings should be dict, got {type(data['greetings']).__name__}"
+    assert set(data["greetings"].keys()) == EXPECTED_GREETING_PERIODS, (
+        f"greetings keys should be {EXPECTED_GREETING_PERIODS}, got {set(data['greetings'].keys())}"
+    )
+    for period in EXPECTED_GREETING_PERIODS:
+        assert isinstance(data["greetings"][period], str), (
+            f"greetings['{period}'] should be str, got {type(data['greetings'][period]).__name__}"
+        )
+        assert len(data["greetings"][period]) > 0, f"greetings['{period}'] should be non-empty"
+
+    # Verify boundaries is a dict with exactly 4 keys and correct integer values
+    assert "boundaries" in data, "Missing field: boundaries"
+    assert isinstance(data["boundaries"], dict), f"boundaries should be dict, got {type(data['boundaries']).__name__}"
+    assert set(data["boundaries"].keys()) == EXPECTED_GREETING_PERIODS, (
+        f"boundaries keys should be {EXPECTED_GREETING_PERIODS}, got {set(data['boundaries'].keys())}"
+    )
+    for period, expected_hour in EXPECTED_BOUNDARIES.items():
+        assert data["boundaries"][period] == expected_hour, (
+            f"boundaries['{period}'] should be {expected_hour}, got {data['boundaries'][period]}"
+        )
+
+    # Verify emoji_map is a dict with exactly 4 keys, each a non-empty string
+    assert "emoji_map" in data, "Missing field: emoji_map"
+    assert isinstance(data["emoji_map"], dict), f"emoji_map should be dict, got {type(data['emoji_map']).__name__}"
+    assert set(data["emoji_map"].keys()) == EXPECTED_GREETING_PERIODS, (
+        f"emoji_map keys should be {EXPECTED_GREETING_PERIODS}, got {set(data['emoji_map'].keys())}"
+    )
+    for period in EXPECTED_GREETING_PERIODS:
+        assert isinstance(data["emoji_map"][period], str), (
+            f"emoji_map['{period}'] should be str, got {type(data['emoji_map'][period]).__name__}"
+        )
+        assert len(data["emoji_map"][period]) > 0, f"emoji_map['{period}'] should be non-empty"
+
+    # Verify text_color is a string
+    assert "text_color" in data, "Missing field: text_color"
+    assert isinstance(data["text_color"], str), f"text_color should be str, got {type(data['text_color']).__name__}"
+    assert len(data["text_color"]) > 0, "text_color should be non-empty"
+
+    # Verify animation is a string
+    assert "animation" in data, "Missing field: animation"
+    assert isinstance(data["animation"], str), f"animation should be str, got {type(data['animation']).__name__}"
+    assert len(data["animation"]) > 0, "animation should be non-empty"
+
+    # Verify exactly 6 top-level keys (no extras)
+    expected_keys = {"enabled", "greetings", "boundaries", "emoji_map", "text_color", "animation"}
+    assert set(data.keys()) == expected_keys, (
+        f"Expected keys {expected_keys}, got {set(data.keys())}. "
+        f"Extra: {set(data.keys()) - expected_keys}, Missing: {expected_keys - set(data.keys())}"
+    )
+
+    print("PASS: greeting-config returns all fields with correct types and values")
+
+
+def test_greeting_config_regression_health_still_works():
+    """GET /api/health still returns 200 after adding greeting-config (regression)."""
+    response = client.get("/api/health")
+    assert response.status_code == 200, f"Expected 200 but got {response.status_code}"
+    data = response.json()
+    assert data["status"] == "ok", f"health status should be 'ok', got {data['status']!r}"
+    print("PASS: /api/health still returns 200 (regression)")
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
@@ -393,6 +481,8 @@ if __name__ == "__main__":
         test_color_picker_convert_invalid_hex,
         test_pipeline_stage_tooltip_config,
         test_pipeline_glow_config_still_works,
+        test_greeting_config_returns_all_fields,
+        test_greeting_config_regression_health_still_works,
     ]:
         try:
             test_fn()

@@ -398,6 +398,21 @@ export async function fetchPipelineStageTooltipConfig(): Promise<PipelineStageTo
   return res.json();
 }
 
+export interface GreetingConfig {
+  enabled: boolean;
+  greetings: Record<string, string>;
+  boundaries: Record<string, number>;
+  emoji_map: Record<string, string>;
+  text_color: string;
+  animation: string;
+}
+
+export async function fetchGreetingConfig(): Promise<GreetingConfig> {
+  const res = await fetch(`${API_URL}/api/greeting-config`);
+  if (!res.ok) throw new Error(`Fetch greeting config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);
