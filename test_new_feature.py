@@ -13,6 +13,8 @@ Tests cover:
 - pipeline-stage-tooltip-config endpoint returns 7 stages with correct names, descriptions, icons, and config
 - greeting-config endpoint returns time-of-day greeting configuration with
   greetings, boundaries, emoji_map, text_color, and animation fields
+- bg-color-config endpoint returns enabled, color (#00ff00), and text_color (#1a1a2e)
+- Regression: health and greeting-config still work after adding bg-color-config
 """
 
 import sys
@@ -465,6 +467,49 @@ def test_greeting_config_regression_health_still_works():
     print("PASS: /api/health still returns 200 (regression)")
 
 
+def test_bg_color_config_returns_expected_shape():
+    """GET /api/bg-color-config returns 200 with enabled, color (#00ff00), and text_color (#1a1a2e)."""
+    response = client.get("/api/bg-color-config")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+
+    # Verify exact response body
+    assert data == {
+        "enabled": True,
+        "color": "#00ff00",
+        "text_color": "#1a1a2e",
+    }, f"Unexpected response body: {data}"
+
+    # Verify field types explicitly
+    assert isinstance(data["enabled"], bool), f"enabled should be bool, got {type(data['enabled']).__name__}"
+    assert isinstance(data["color"], str), f"color should be str, got {type(data['color']).__name__}"
+    assert isinstance(data["text_color"], str), f"text_color should be str, got {type(data['text_color']).__name__}"
+
+    # Verify no extra fields (exactly 3 keys)
+    expected_keys = {"enabled", "color", "text_color"}
+    assert set(data.keys()) == expected_keys, (
+        f"Expected keys {expected_keys}, got {set(data.keys())}. "
+        f"Extra: {set(data.keys()) - expected_keys}"
+    )
+
+    print("PASS: bg-color-config returns expected shape and values")
+
+
+def test_bg_color_config_regression_neighbors_still_work():
+    """After adding bg-color-config, /api/health and /api/greeting-config still return 200."""
+    health = client.get("/api/health")
+    assert health.status_code == 200, f"Health check failed: {health.status_code}"
+    assert health.json() == {"status": "ok"}, f"Health body unexpected: {health.json()}"
+
+    greeting = client.get("/api/greeting-config")
+    assert greeting.status_code == 200, f"Greeting config failed: {greeting.status_code}"
+    greeting_data = greeting.json()
+    assert "enabled" in greeting_data, "greeting-config missing 'enabled'"
+    assert "greetings" in greeting_data, "greeting-config missing 'greetings'"
+
+    print("PASS: neighboring endpoints (health, greeting-config) still work after bg-color-config addition")
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
@@ -483,6 +528,8 @@ if __name__ == "__main__":
         test_pipeline_glow_config_still_works,
         test_greeting_config_returns_all_fields,
         test_greeting_config_regression_health_still_works,
+        test_bg_color_config_returns_expected_shape,
+        test_bg_color_config_regression_neighbors_still_work,
     ]:
         try:
             test_fn()

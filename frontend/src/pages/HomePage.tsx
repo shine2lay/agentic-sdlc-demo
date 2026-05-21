@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, fetchAgentFunFact, fetchPipelineStageTooltipConfig, fetchGreetingConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig, type AgentFunFact, type PipelineStageTooltipConfig, type GreetingConfig } from '../api';
+import { fetchHealth, fetchRuns, submitSuggestion, fetchTypewriterConfig, fetchBackToTopConfig, fetchParallaxConfig, fetchSparkleConfig, fetchGradientBorderConfig, fetchSuggestionsCount, fetchProgrammingJoke, fetchConfettiConfig, fetchCommunityCreationsConfig, fetchActiveTabShimmerConfig, fetchAgentFunFact, fetchPipelineStageTooltipConfig, fetchGreetingConfig, fetchBgColorConfig, type Run, type TypewriterConfig, type BackToTopConfig, type ParallaxConfig, type SparkleConfig, type GradientBorderConfig, type SuggestionsCountData, type ProgrammingJoke, type ConfettiConfig, type CommunityCreationsConfig, type ActiveTabShimmerConfig, type AgentFunFact, type PipelineStageTooltipConfig, type GreetingConfig, type BgColorConfig } from '../api';
 import { formatTimeAgo } from '../execution/utils';
 import { formatCost } from '../lib/utils';
 
@@ -285,6 +285,7 @@ export function HomePage() {
   const [confettiRunIds, setConfettiRunIds] = useState<Set<string>>(new Set());
   const [agentFunFact, setAgentFunFact] = useState<string>('');
   const [greetingConfig, setGreetingConfig] = useState<GreetingConfig | null>(null);
+  const [bgColorConfig, setBgColorConfig] = useState<BgColorConfig | null>(null);
   const prevOutcomesRef = useRef<Map<string, RunOutcome>>(new Map());
   const isFirstFetchRef = useRef(true);
   const heroBgRef = useRef<HTMLDivElement>(null);
@@ -317,6 +318,7 @@ export function HomePage() {
     fetchCommunityCreationsConfig().then(setCommunityCreations).catch(() => {});
     fetchActiveTabShimmerConfig().then(setShimmerConfig).catch(() => {});
     fetchGreetingConfig().then(setGreetingConfig).catch(() => {});
+    fetchBgColorConfig().then(setBgColorConfig).catch(() => {});
     fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); setLoading(false); }).catch(() => setLoading(false));
     const interval = setInterval(() => {
       fetchRuns().then((d) => { const r = d?.runs ?? []; setRuns(r); setCache(r); }).catch(() => {});
@@ -326,6 +328,21 @@ export function HomePage() {
     }, 10000);
     return () => { clearInterval(interval); clearInterval(suggestionsInterval); };
   }, []);
+
+  useEffect(() => {
+    if (bgColorConfig?.enabled) {
+      document.documentElement.style.setProperty('--temper-bg', bgColorConfig.color);
+      document.documentElement.style.setProperty('--temper-text', bgColorConfig.text_color);
+      document.documentElement.style.setProperty('--background', bgColorConfig.color);
+      document.documentElement.style.setProperty('--foreground', bgColorConfig.text_color);
+      return () => {
+        document.documentElement.style.removeProperty('--temper-bg');
+        document.documentElement.style.removeProperty('--temper-text');
+        document.documentElement.style.removeProperty('--background');
+        document.documentElement.style.removeProperty('--foreground');
+      };
+    }
+  }, [bgColorConfig]);
 
   useEffect(() => {
     if (!confettiConfig || !confettiConfig.enabled) return;

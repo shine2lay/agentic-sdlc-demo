@@ -413,6 +413,18 @@ export async function fetchGreetingConfig(): Promise<GreetingConfig> {
   return res.json();
 }
 
+export interface BgColorConfig {
+  enabled: boolean;
+  color: string;
+  text_color: string;
+}
+
+export async function fetchBgColorConfig(): Promise<BgColorConfig> {
+  const res = await fetch(`${API_URL}/api/bg-color-config`);
+  if (!res.ok) throw new Error(`Fetch bg color config failed: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchRuns(): Promise<{ runs: Run[]; total: number }> {
   const res = await fetch(`${API_URL}/api/runs`);
   if (!res.ok) throw new Error(`Fetch runs failed: ${res.status}`);

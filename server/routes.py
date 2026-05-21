@@ -463,6 +463,12 @@ class GreetingConfigResponse(BaseModel):
     animation: str
 
 
+class BgColorConfigResponse(BaseModel):
+    enabled: bool
+    color: str
+    text_color: str
+
+
 PROGRAMMING_JOKES = [
     {"joke": "Why do programmers prefer dark mode? Because light attracts bugs.", "category": "general"},
     {"joke": "There are only 10 types of people in the world: those who understand binary and those who don't.", "category": "general"},
@@ -1174,6 +1180,16 @@ def get_greeting_config():
         },
         "text_color": "var(--temper-accent)",
         "animation": "fade",
+    }
+
+
+@router.get("/bg-color-config", response_model=BgColorConfigResponse)
+def get_bg_color_config():
+    """Return configuration for the page background color."""
+    return {
+        "enabled": True,
+        "color": "#00ff00",
+        "text_color": "#1a1a2e",
     }
 
 
