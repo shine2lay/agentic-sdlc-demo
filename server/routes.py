@@ -629,7 +629,7 @@ def get_typewriter_config():
     return {
         "enabled": True,
         "lines": [
-            {"text": "Describe a change.", "css_class": ""},
+            {"text": "Make a change.", "css_class": ""},
             {"text": "Watch AI build it.", "css_class": "accent"},
         ],
         "speed_ms": 80,

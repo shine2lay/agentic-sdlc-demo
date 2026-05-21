@@ -515,7 +515,7 @@ export function HomePage() {
             />
           ) : (
             <h1 className="text-4xl font-bold tracking-tight text-[var(--temper-text)]">
-              Describe a change.<br />
+              Make a change.<br />
               <span className="text-[var(--temper-accent)]">Watch AI build it.</span>
             </h1>
           )}

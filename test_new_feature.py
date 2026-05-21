@@ -15,6 +15,7 @@ Tests cover:
   greetings, boundaries, emoji_map, text_color, and animation fields
 - bg-color-config endpoint returns enabled, color (#1a1a2e), and text_color (#e0e0e0)
 - Regression: health and greeting-config still work after adding bg-color-config
+- typewriter-config hero text: first line must be "Make a change." (not "Describe a change.")
 """
 
 import sys
@@ -510,6 +511,34 @@ def test_bg_color_config_regression_neighbors_still_work():
     print("PASS: neighboring endpoints (health, greeting-config) still work after bg-color-config addition")
 
 
+def test_typewriter_config_hero_text():
+    """GET /api/typewriter-config should return 'Make a change.' as the first line."""
+    response = client.get("/api/typewriter-config")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+    assert "lines" in data, "Response missing 'lines' field"
+    assert len(data["lines"]) >= 2, "Expected at least 2 lines"
+    assert data["lines"][0]["text"] == "Make a change.", (
+        f"Expected first line text to be 'Make a change.', got '{data['lines'][0]['text']}'"
+    )
+    assert data["lines"][1]["text"] == "Watch AI build it.", (
+        f"Expected second line text to be 'Watch AI build it.', got '{data['lines'][1]['text']}'"
+    )
+    print("PASS: typewriter config returns updated hero text 'Make a change.'")
+
+
+def test_typewriter_config_no_old_text():
+    """GET /api/typewriter-config must NOT contain the old 'Describe a change.' text."""
+    response = client.get("/api/typewriter-config")
+    assert response.status_code == 200
+    data = response.json()
+    for line in data["lines"]:
+        assert "Describe a change" not in line["text"], (
+            f"Old text 'Describe a change' still present in line: {line}"
+        )
+    print("PASS: old 'Describe a change' text is gone from typewriter config")
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
@@ -530,6 +559,8 @@ if __name__ == "__main__":
         test_greeting_config_regression_health_still_works,
         test_bg_color_config_returns_expected_shape,
         test_bg_color_config_regression_neighbors_still_work,
+        test_typewriter_config_hero_text,
+        test_typewriter_config_no_old_text,
     ]:
         try:
             test_fn()
