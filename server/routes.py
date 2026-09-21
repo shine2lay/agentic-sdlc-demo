@@ -1188,8 +1188,8 @@ def get_bg_color_config():
     """Return configuration for the page background color."""
     return {
         "enabled": True,
-        "color": "#1a1a2e",
-        "text_color": "#e0e0e0",
+        "color": "#39FF14",
+        "text_color": "#0a0a0a",
     }
 
 

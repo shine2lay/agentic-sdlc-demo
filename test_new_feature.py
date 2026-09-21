@@ -13,7 +13,7 @@ Tests cover:
 - pipeline-stage-tooltip-config endpoint returns 7 stages with correct names, descriptions, icons, and config
 - greeting-config endpoint returns time-of-day greeting configuration with
   greetings, boundaries, emoji_map, text_color, and animation fields
-- bg-color-config endpoint returns enabled, color (#1a1a2e), and text_color (#e0e0e0)
+- bg-color-config endpoint returns enabled, color (#39FF14), and text_color (#0a0a0a)
 - Regression: health and greeting-config still work after adding bg-color-config
 - typewriter-config hero text: first line must be "Make a change." (not "Describe a change.")
 """
@@ -469,7 +469,7 @@ def test_greeting_config_regression_health_still_works():
 
 
 def test_bg_color_config_returns_expected_shape():
-    """GET /api/bg-color-config returns 200 with enabled, color (#1a1a2e), and text_color (#e0e0e0)."""
+    """GET /api/bg-color-config returns 200 with enabled, color (#39FF14), and text_color (#0a0a0a)."""
     response = client.get("/api/bg-color-config")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
@@ -477,8 +477,8 @@ def test_bg_color_config_returns_expected_shape():
     # Verify exact response body
     assert data == {
         "enabled": True,
-        "color": "#1a1a2e",
-        "text_color": "#e0e0e0",
+        "color": "#39FF14",
+        "text_color": "#0a0a0a",
     }, f"Unexpected response body: {data}"
 
     # Verify field types explicitly

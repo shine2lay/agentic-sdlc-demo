@@ -331,15 +331,35 @@ export function HomePage() {
 
   useEffect(() => {
     if (bgColorConfig?.enabled) {
-      document.documentElement.style.setProperty('--temper-bg', bgColorConfig.color);
-      document.documentElement.style.setProperty('--temper-text', bgColorConfig.text_color);
-      document.documentElement.style.setProperty('--background', bgColorConfig.color);
-      document.documentElement.style.setProperty('--foreground', bgColorConfig.text_color);
+      const root = document.documentElement;
+      root.style.setProperty('--temper-bg', bgColorConfig.color);
+      root.style.setProperty('--temper-text', bgColorConfig.text_color);
+      root.style.setProperty('--background', bgColorConfig.color);
+      root.style.setProperty('--foreground', bgColorConfig.text_color);
+      // Dark text on the neon page means the dark navy cards would be
+      // unreadable, so lighten the surface family while the neon background
+      // is active. Reverted on unmount, so /runs/:id keeps the dark theme.
+      root.style.setProperty('--temper-surface', '#f4fff0');
+      root.style.setProperty('--temper-panel', '#e8fbe4');
+      root.style.setProperty('--temper-panel-light', '#dcf7d6');
+      root.style.setProperty('--temper-border', '#1f7a12');
+      root.style.setProperty('--temper-border-light', '#2fa31c');
+      root.style.setProperty('--temper-text-muted', '#3d5c38');
+      root.style.setProperty('--temper-text-dim', '#5c7a57');
+      root.style.setProperty('color-scheme', 'light');
       return () => {
-        document.documentElement.style.removeProperty('--temper-bg');
-        document.documentElement.style.removeProperty('--temper-text');
-        document.documentElement.style.removeProperty('--background');
-        document.documentElement.style.removeProperty('--foreground');
+        root.style.removeProperty('--temper-bg');
+        root.style.removeProperty('--temper-text');
+        root.style.removeProperty('--background');
+        root.style.removeProperty('--foreground');
+        root.style.removeProperty('--temper-surface');
+        root.style.removeProperty('--temper-panel');
+        root.style.removeProperty('--temper-panel-light');
+        root.style.removeProperty('--temper-border');
+        root.style.removeProperty('--temper-border-light');
+        root.style.removeProperty('--temper-text-muted');
+        root.style.removeProperty('--temper-text-dim');
+        root.style.removeProperty('color-scheme');
       };
     }
   }, [bgColorConfig]);
