@@ -10,12 +10,21 @@ import { TimerPage } from './pages/TimerPage';
 import { TypingTestPage } from './pages/TypingTestPage';
 import { PalettePage } from './pages/PalettePage';
 import { PixelArtPage } from './pages/PixelArtPage';
-import { fetchVersion } from './api';
+import { fetchVersion, fetchDancingRobotConfig } from './api';
+
+const DEFAULT_ROBOT = { enabled: true, emoji: '\u{1F916}', label: 'Dancing robot', size_px: 16, animation_duration_ms: 1200, color: 'var(--temper-text-muted)' };
 
 export default function App() {
   const { data: versionInfo } = useQuery({
     queryKey: ['version'],
     queryFn: fetchVersion,
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  const { data: robot = DEFAULT_ROBOT } = useQuery({
+    queryKey: ['dancing-robot-config'],
+    queryFn: fetchDancingRobotConfig,
     staleTime: Infinity,
     retry: false,
   });
@@ -54,6 +63,17 @@ export default function App() {
           {' · '}<a href="/tools/palette" className="text-[var(--temper-accent)] hover:underline">Palette</a>
           {' · '}<a href="/games/pixel-art" className="text-[var(--temper-accent)] hover:underline">Pixel Art</a>
         </p>
+        {robot.enabled && (
+          <span
+            data-testid="dancing-robot"
+            className="footer-dancing-robot"
+            role="img"
+            aria-label={robot.label}
+            style={{ fontSize: `${robot.size_px}px`, color: robot.color, ['--robot-duration' as string]: `${robot.animation_duration_ms}ms` }}
+          >
+            {robot.emoji}
+          </span>
+        )}
         {versionInfo?.version && (
           <p className="text-xs mt-1 text-[var(--temper-text-muted)]">
             v{versionInfo.version}

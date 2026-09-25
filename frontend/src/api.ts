@@ -467,3 +467,18 @@ export interface Run {
   cost_dollars?: number | null;
   workflow_output?: { result?: string; reason?: string } | null;
 }
+
+export interface DancingRobotConfig {
+  enabled: boolean;
+  emoji: string;
+  label: string;
+  size_px: number;
+  animation_duration_ms: number;
+  color: string;
+}
+
+export async function fetchDancingRobotConfig(): Promise<DancingRobotConfig> {
+  const res = await fetch(`${API_URL}/api/dancing-robot-config`);
+  if (!res.ok) throw new Error(`Fetch dancing robot config failed: ${res.status}`);
+  return res.json();
+}

@@ -469,6 +469,15 @@ class BgColorConfigResponse(BaseModel):
     text_color: str
 
 
+class DancingRobotConfigResponse(BaseModel):
+    enabled: bool
+    emoji: str
+    label: str
+    size_px: int
+    animation_duration_ms: int
+    color: str
+
+
 PROGRAMMING_JOKES = [
     {"joke": "Why do programmers prefer dark mode? Because light attracts bugs.", "category": "general"},
     {"joke": "There are only 10 types of people in the world: those who understand binary and those who don't.", "category": "general"},
@@ -1190,6 +1199,19 @@ def get_bg_color_config():
         "enabled": True,
         "color": "#39FF14",
         "text_color": "#0a0a0a",
+    }
+
+
+@router.get("/dancing-robot-config", response_model=DancingRobotConfigResponse)
+def get_dancing_robot_config():
+    """Return configuration for the small dancing robot animation in the footer."""
+    return {
+        "enabled": True,
+        "emoji": "\U0001f916",
+        "label": "Dancing robot",
+        "size_px": 16,
+        "animation_duration_ms": 1200,
+        "color": "var(--temper-text-muted)",
     }
 
 

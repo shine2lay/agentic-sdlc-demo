@@ -16,6 +16,7 @@ Tests cover:
 - bg-color-config endpoint returns enabled, color (#39FF14), and text_color (#0a0a0a)
 - Regression: health and greeting-config still work after adding bg-color-config
 - typewriter-config hero text: first line must be "Make a change." (not "Describe a change.")
+- dancing-robot-config endpoint returns the footer robot animation config
 """
 
 import sys
@@ -539,6 +540,34 @@ def test_typewriter_config_no_old_text():
     print("PASS: old 'Describe a change' text is gone from typewriter config")
 
 
+def test_dancing_robot_config_returns_expected_fields():
+    """GET /api/dancing-robot-config returns the footer robot animation config."""
+    response = client.get("/api/dancing-robot-config")
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    data = response.json()
+    assert set(data.keys()) == {"enabled", "emoji", "label", "size_px", "animation_duration_ms", "color"}, f"Unexpected field set: {sorted(data.keys())}"
+    assert data["enabled"] is True
+    assert data["emoji"] == "\U0001f916"
+    assert data["label"] == "Dancing robot"
+    assert data["size_px"] == 16
+    assert data["animation_duration_ms"] == 1200
+    assert data["color"] == "var(--temper-text-muted)"
+    print("PASS: dancing-robot-config returns expected fields")
+
+
+def test_dancing_robot_config_regression_neighbors_still_work():
+    """Adding dancing-robot-config must not break health, bg-color-config, or confetti-config."""
+    assert client.get("/api/health").status_code == 200
+    bg = client.get("/api/bg-color-config")
+    assert bg.status_code == 200
+    assert bg.json()["color"] == "#39FF14"
+    confetti = client.get("/api/confetti-config")
+    assert confetti.status_code == 200
+    assert len(confetti.json()) == 15, f"confetti-config field count changed: {len(confetti.json())}"
+    assert client.get("/api/dancing-robot-config").status_code == 200
+    print("PASS: neighbors still work after adding dancing-robot-config")
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
@@ -561,6 +590,8 @@ if __name__ == "__main__":
         test_bg_color_config_regression_neighbors_still_work,
         test_typewriter_config_hero_text,
         test_typewriter_config_no_old_text,
+        test_dancing_robot_config_returns_expected_fields,
+        test_dancing_robot_config_regression_neighbors_still_work,
     ]:
         try:
             test_fn()

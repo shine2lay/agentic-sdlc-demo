@@ -390,3 +390,19 @@ body {
   .confetti-particle { animation: none; display: none; }
 }
 /* rebuild 1775872704 */
+.footer-dancing-robot {
+  display: inline-block;
+  line-height: 1;
+  margin-top: 2px;
+  transform-origin: 50% 100%;
+  animation: footer-robot-dance var(--robot-duration, 1200ms) ease-in-out infinite;
+}
+@keyframes footer-robot-dance {
+  0%, 100% { transform: translateY(0) rotate(-8deg); }
+  25% { transform: translateY(-3px) rotate(6deg); }
+  50% { transform: translateY(0) rotate(8deg); }
+  75% { transform: translateY(-3px) rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .footer-dancing-robot { animation: none; transform: none; }
+}
